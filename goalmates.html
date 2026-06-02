@@ -2107,56 +2107,147 @@ function initApp(){try{if(!window.firebase){bootUser(null);return;}if(!firebase.
 
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 
+
+/* ══════════ Recovered Functions ══════════ */
+
+function showPlayerProfile(name){
+  var ranking=historicalRanking('General');
+  var streak=streakData('General');
+  var titles=flTitleRecords().filter(function(r){return r.champion===name||(r.champion&&r.champion.includes&&r.champion.includes(name));});
+  var ms=orderedPlayedMatches().filter(function(m){return [...(m.teamA||[]),...(m.teamB||[])].includes(name);});
+  var w=0,d=0,l=0,gf=0,gc=0;
+  ms.forEach(function(m){
+    var win=winnerOf(m),isA=(m.teamA||[]).includes(name);
+    var mGF=isA?(m.scoreA||0):(m.scoreB||0),mGC=isA?(m.scoreB||0):(m.scoreA||0);
+    gf+=Number(mGF);gc+=Number(mGC);
+    if(!win)d++;else if(win.includes(name))w++;else l++;
+  });
+  var eff=ms.length?Math.round(w/ms.length*100):0;
+  var bestWin=streak.bestWin&&streak.bestWin.name===name?streak.bestWin.count:0;
+  var rankPos=(ranking.findIndex(function(p){return p.name===name;})+1)||'-';
+  var titlesHtml=titles.length?'<div style="margin-top:4px"><div class="label">Palmarés</div>'+titles.slice(0,5).map(function(t){return '<div class="feed-item" style="margin-bottom:6px"><div class="feed-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M6 3h8v7a4 4 0 01-8 0V3z"/><path d="M6 6H3a2 2 0 002 2h1M14 6h3a2 2 0 01-2 2h-1M10 14v3M7 17h6"/></svg></div><div class="feed-content"><div class="feed-title">'+esc(t.name)+'</div><div class="feed-sub">'+esc(t.mode)+' · '+esc(t.format)+' · '+esc(t.date||'')+'</div></div></div>';}).join('')+'</div>':'';
+  var body='<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'+playerPhoto(name,'photoBig')+'<div><div style="font-size:22px;font-weight:900;color:#F4F1E7">'+esc(name)+'</div><div style="font-size:12px;color:#D4AF37;font-weight:700;letter-spacing:0.1em">RANKING #'+rankPos+'</div></div></div><div class="historyGrid" style="margin-bottom:12px"><div class="recordCard"><span class="muted">Partidos</span><div class="recordValue">'+ms.length+'</div></div><div class="recordCard"><span class="muted">Victorias</span><div class="recordValue" style="color:#D4AF37">'+w+'</div></div><div class="recordCard"><span class="muted">Empates</span><div class="recordValue">'+d+'</div></div><div class="recordCard"><span class="muted">Derrotas</span><div class="recordValue">'+l+'</div></div><div class="recordCard"><span class="muted">Goles</span><div class="recordValue">'+gf+'</div></div><div class="recordCard"><span class="muted">Efectividad</span><div class="recordValue">'+eff+'%</div></div></div><div class="historyGrid" style="margin-bottom:12px"><div class="recordCard"><span class="muted">Mejor racha</span><div class="recordValue" style="color:#D4AF37">'+(bestWin||'-')+'</div>'+(bestWin?'<p class="small">victorias seguidas</p>':'')+'</div><div class="recordCard"><span class="muted">Títulos</span><div class="recordValue">'+titles.length+'</div></div></div>'+titlesHtml;
+  showModal(body);
+}
+
+function celebrateGoal(){
+  var el=document.createElement('div');
+  el.className='goal-flash';
+  el.innerHTML='<div class="goal-text">⚽ GOL</div>';
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},1200);
+}
+
+function showChampionOverlay(name){
+  let el=document.createElement('div');
+  el.style.cssText='position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,12,15,0.94);animation:champIn 0.4s ease';
+  el.innerHTML=`<div style="font-size:60px;margin-bottom:8px">🏆</div><div style="font-size:10px;font-weight:900;letter-spacing:0.25em;color:#D4AF37;text-transform:uppercase;margin-bottom:10px">Campeón</div><div style="font-size:40px;font-weight:900;color:#F4F1E7;letter-spacing:-0.02em;text-align:center;max-width:300px">${esc(name)}</div><button onclick="this.parentElement.remove()" style="margin-top:28px;background:#D4AF37;color:#080C0F;border:none;border-radius:8px;padding:12px 32px;font-size:13px;font-weight:900;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase">Continuar</button>`;
+  document.body.appendChild(el);
+  celebrateConfetti();
+}
+
+function celebrateConfetti(){
+  var container=document.createElement('div');
+  container.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:998;overflow:hidden';
+  var colors=['#D4AF37','#F4D45F','#F4F1E7','#080C0F'];
+  for(var i=0;i<60;i++){
+    var p=document.createElement('div');
+    var c=colors[Math.floor(Math.random()*colors.length)];
+    var x=Math.random()*100,delay=Math.random()*0.8,dur=1.2+Math.random()*0.8;
+    p.style.cssText='position:absolute;top:-10px;left:'+x+'%;width:8px;height:8px;background:'+c+';border-radius:'+(Math.random()>0.5?'50%':'2px')+';animation:confettiFall '+dur+'s '+delay+'s ease-in forwards';
+    container.appendChild(p);
+  }
+  document.body.appendChild(container);
+  setTimeout(function(){container.remove();},3000);
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  localStorage.setItem('fl_theme',document.body.classList.contains('light')?'light':'dark');
+}
+
+// Restore saved theme
+(function(){
+  var savedTheme = localStorage.getItem('fl_theme');
+  if(savedTheme === 'light') document.body.classList.add('light');
+  var icon = document.getElementById('theme-icon');
+  if(icon) icon.textContent = document.body.classList.contains('light') ? '🌙' : '☀';
+})();
+
 initApp();
 
 /* ══════ Group Management Panel ══════ */
 function showGroupMenu() {
   var key = CURRENT_USER ? 'goalmates_group_' + CURRENT_USER.uid : 'goalmates_group_config';
   var allGroups = [];
-  // Scan localStorage for all groups of this user
   for(var i=0;i<localStorage.length;i++){
     var k=localStorage.key(i);
-    if(CURRENT_USER && k && k.startsWith('goalmates_group_'+CURRENT_USER.uid)){
+    if(k && (CURRENT_USER ? k.startsWith('goalmates_group_'+CURRENT_USER.uid) : k === 'goalmates_group_config')){
       try{ var g=JSON.parse(localStorage.getItem(k)); if(g&&g.groupName) allGroups.push({key:k,config:g}); }catch(e){}
     }
   }
-  // Current group
   var currentKey = CURRENT_USER ? 'goalmates_group_' + CURRENT_USER.uid : 'goalmates_group_config';
   
   var groupListHTML = allGroups.length > 0 ? allGroups.map(function(g){
     var isCurrent = g.key === currentKey;
-    return '<div onclick="switchToGroup(\''+g.key+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;margin-bottom:6px;cursor:pointer;background:'+(isCurrent?'rgba(212,175,55,0.15)':'rgba(255,255,255,0.05)')+';border:1px solid '+(isCurrent?'rgba(212,175,55,0.4)':'rgba(255,255,255,0.1)')+'">'
-      + '<div><div style="font-weight:800;color:#F4F1E7;font-size:14px;">'+g.config.groupName+'</div>'
-      + '<div style="font-size:11px;color:#9ca3af;">'+g.config.players.length+' jugadores</div></div>'
-      + (isCurrent?'<span style="color:#D4AF37;font-size:18px;">✓</span>':'')
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;margin-bottom:6px;cursor:pointer;background:'+(isCurrent?'rgba(212,175,55,0.15)':'rgba(255,255,255,0.05)')+';border:1px solid '+(isCurrent?'rgba(212,175,55,0.4)':'rgba(255,255,255,0.1)')+'">'
+      + '<div onclick="switchToGroup(''+g.key+'')" style="flex:1;">'
+      + '<div style="font-weight:800;color:#F4F1E7;font-size:14px;">'+g.config.groupName+'</div>'
+      + '<div style="font-size:11px;color:#9ca3af;">'+g.config.players.length+' jugadores</div>'
+      + '</div>'
+      + (isCurrent ? '<span style="color:#D4AF37;font-size:16px;margin-right:8px;">✓</span>' : '')
+      + (allGroups.length > 1 ? '<button onclick="deleteGroup(''+g.key+'')" style="background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:4px 8px;color:#fca5a5;font-size:11px;cursor:pointer;font-weight:700;">✕</button>' : '')
       + '</div>';
   }).join('') : '<div style="color:#9ca3af;font-size:13px;text-align:center;padding:10px;">No hay grupos guardados</div>';
 
   gmShow('<div style="display:flex;flex-direction:column;gap:12px;">'
     + '<div>'
-    + '<div style="font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Mis grupos</div>'
+    + '<div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Mis grupos</div>'
     + groupListHTML
     + '</div>'
-    + '<button onclick="showSetupScreen()" style="width:100%;border:2px dashed rgba(212,175,55,0.4);border-radius:12px;padding:10px;background:none;color:#D4AF37;font-weight:700;font-size:14px;cursor:pointer;">+ Crear nuevo grupo</button>'
-    + '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;margin-top:4px;">'
+    + '<button onclick="gmHide();showSetupScreen()" style="width:100%;border:2px dashed rgba(212,175,55,0.4);border-radius:12px;padding:10px;background:none;color:#D4AF37;font-weight:700;font-size:14px;cursor:pointer;">+ Crear nuevo grupo</button>'
+    + '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">'
     + '<button onclick="doSignOut()" style="width:100%;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:12px;padding:12px;color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">Cerrar sesion</button>'
-    + '</div></div>', 'Tu cuenta');
-  // Override subtitle background for dark theme
+    + '</div></div>', 'Tu cuenta — FootLegacy');
   var box = document.getElementById('gm-box');
   if(box){ box.style.background='#1a1a2e'; box.style.color='#F4F1E7'; }
-  var sub = document.getElementById('gm-subtitle');
+  var sub = document.getElementById('gm-subtitle'); 
   if(sub){ sub.style.color='#9ca3af'; }
+  // Replace GoalMates title with FootLegacy
+  var h1 = document.querySelector('#gm-box h1');
+  if(h1){ h1.textContent = 'FootLegacy'; h1.style.color='#D4AF37'; }
+  var ball = document.querySelector('#gm-box div[style*="font-size:52px"]');
+  if(ball){ ball.textContent = '🏆'; }
   // Add close button
-  var content = document.getElementById('gm-content');
-  if(content){
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = 'x';
-    closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;font-weight:700;';
-    closeBtn.onclick = function(){ gmHide(); };
+  setTimeout(function(){
     var box2 = document.getElementById('gm-box');
-    if(box2){ box2.style.position='relative'; box2.appendChild(closeBtn); }
+    if(box2 && !box2.querySelector('.gm-close-btn')){
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'gm-close-btn';
+      closeBtn.textContent = '×';
+      closeBtn.style.cssText = 'position:absolute;top:12px;right:16px;background:none;border:none;color:#9ca3af;font-size:24px;cursor:pointer;font-weight:400;line-height:1;';
+      closeBtn.onclick = function(){ gmHide(); };
+      box2.style.position='relative';
+      box2.appendChild(closeBtn);
+    }
+  }, 50);
+}
+
+function deleteGroup(key) {
+  var config = JSON.parse(localStorage.getItem(key)||'null');
+  if(!config) return;
+  if(!confirm('Eliminar el grupo "' + config.groupName + '"? Esta accion no se puede deshacer.')) return;
+  localStorage.removeItem(key);
+  // If was active group, switch to another or show setup
+  var currentKey = CURRENT_USER ? 'goalmates_group_' + CURRENT_USER.uid : 'goalmates_group_config';
+  if(key === currentKey){
+    gmHide();
+    showSetupScreen();
+  } else {
+    showGroupMenu(); // refresh panel
   }
 }
+
 
 function switchToGroup(key){
   if(!CURRENT_USER && key !== 'goalmates_group_config') return;
