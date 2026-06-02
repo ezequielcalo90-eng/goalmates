@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="es">
 <head>
@@ -8,9 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GoalMates">
-<link rel="apple-touch-icon" href="icon-192.png">
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>Torneos 1vs1 / 2vs2</title>
+<title>GoalMates</title>
 <style>
     :root{
       --bg:#06140d;--panel:#ffffff;--ink:#0f172a;--muted:#64748b;--green:#16a34a;--dark:#052e1a;--lime:#d9f99d;--soft:#ecfdf5;--line:#d1fae5;--gold:#facc15;
@@ -36,9 +35,22 @@
   </style>
 </head>
 <body>
+
+<!-- AUTH / SETUP OVERLAY -->
+<div id="gm-overlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#052e1a 0%,#16a34a 100%);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,system-ui,sans-serif;">
+  <div id="gm-box" style="background:white;border-radius:28px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,0.35);">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:52px;margin-bottom:8px;">⚽</div>
+      <h1 style="margin:0 0 4px;color:#052e1a;font-size:26px;font-weight:900;">GoalMates</h1>
+      <p id="gm-subtitle" style="color:#64748b;margin:0;font-size:13px;">Cargando...</p>
+    </div>
+    <div id="gm-content"></div>
+  </div>
+</div>
+
 <div class="app">
 <div class="glow g1"></div><div class="glow g2"></div>
-<header><div class="top"><div><div class="eyebrow">Liga privada</div><h1 id="app-title">GoalMates</h1></div><div style="display:flex;gap:8px;align-items:center;"><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Salir</button><div class="badge">🏆</div></div></div></header>
+<header><div class="top"><div><div class="eyebrow">Liga privada</div><h1 id="app-title">Fútbol &amp; Amigos</h1></div><div style="display:flex;gap:8px;align-items:center;"><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Salir</button><div class="badge">🏆</div></div></div></header>
 <main>
 <section class="screen active" id="home"></section>
 <section class="screen" id="crear"></section>
@@ -64,7 +76,7 @@ const PLAYER_PHOTOS = {};
 const KEY="torneos_pes_final_v3";
 let state=JSON.parse(localStorage.getItem(KEY)||"null")||seed();
 state=(typeof normalizeStateShape==='function'?normalizeStateShape(state):state);
-let ui={tab:"home",selectedTournament:state.tournaments[0]?.id||null,newName:"2vs2 Viernes",mode:"2v2",format:"Liga",selected:[...PLAYERS],preview:null,hType:"players",hA:PLAYERS[0]||"",hB:PLAYERS[1]||"",tA:(PLAYERS[0]&&PLAYERS[1])?PLAYERS[0]+" + "+PLAYERS[1]:"",tB:(PLAYERS[2]&&PLAYERS[3])?PLAYERS[2]+" + "+PLAYERS[3]:"",legMode:"Ida",copaLegs:"Ida",histScope:"General",hFormat:"Todos"};
+let ui={tab:"home",selectedTournament:state.tournaments[0]?.id||null,newName:"2vs2 Viernes",mode:"2v2",format:"Liga",selected:[...PLAYERS],preview:null,hType:"players",hA:"",hB:"",tA:"",tB:"",legMode:"Ida",copaLegs:"Ida",histScope:"General",hFormat:"Todos"};
 
 const firebaseConfig = {
   apiKey: "AIzaSyAgLQSXSHvjN38Cij-8TTfPkmSh1Sg3zaw",
@@ -108,7 +120,7 @@ function unitsFor(mode,players){return mode==="1v1"?players.map(p=>[p]):makeTeam
 function selectedSignature(players){return [...(players||[])].map(String).sort().join("|")}
 function cloneUnits(units){return (units||[]).map(u=>Array.isArray(u)?[...u]:[u])}
 function teamName(t){return Array.isArray(t)?t.join(" + "):String(t||"")}
-function playerPhoto(name,cls="photoMini"){return `<span class="avatar">${esc(String(name||"?")[0]||"?")}</span>`}
+function playerPhoto(name,cls="photoMini"){let src=PLAYER_PHOTOS?.[name];return src?`<img class="${cls}" src="${src}" alt="${esc(name)}">`:`<span class="avatar">${esc(String(name||"?")[0]||"?")}</span>`}
 function playerInline(name,cls="photoMini"){return `<span class="teamPhotos"><span class="photoStack">${playerPhoto(name,cls)}</span><span class="names">${esc(name)}</span></span>`}
 function teamHtml(team,align="left",photoCls="photoMini"){if(!Array.isArray(team))return esc(teamName(team));if(isPlaceholder(team))return `<span class="teamPhotos ${align==='right'?'right':''}"><span class="names">${esc(teamName(team))}</span></span>`;let photos=team.map(p=>playerPhoto(p,photoCls)).join("");let names=esc(teamName(team));return `<span class="teamPhotos ${align==='right'?'right':''}"><span class="photoStack">${photos}</span><span class="names">${names}</span></span>`}
 function teamFromNameHtml(name,align="left",photoCls="photoMini"){let parts=String(name||"").split(" + ").map(x=>x.trim()).filter(Boolean);return teamHtml(parts.length?parts:[name],align,photoCls)}
@@ -518,842 +530,203 @@ function teamStats(tid){
   return Object.values(st).map(s=>({...s,diff:s.gf-s.gc})).sort((a,b)=>b.pts-a.pts||b.diff-a.diff||b.gf-a.gf||a.player.localeCompare(b.player));
 }
 
-function render(){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(ui.tab).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===ui.tab));renderHome();renderCrear();renderFixture();renderTabla();renderCara();renderHistorial();}
-
-function best2v2HomeTeam(records){
-  // En la Home priorizamos el campeón vigente/último torneo 2vs2 cerrado.
-  // Si todavía no hay torneos finalizados, recién ahí usamos rendimiento por partidos jugados.
-  let latest2=(records||[]).find(r=>r.mode==='2v2'&&r.champion);
-  if(latest2){
-    return {name:latest2.champion, team:String(latest2.champion||'').split(' + ').map(x=>x.trim()).filter(Boolean), note:`Campeones vigentes · ${esc(latest2.name)}`};
-  }
-  let table={};
-  state.matches.filter(m=>m.played&&!m.bye&&m.mode==='2v2').forEach(m=>{
-    let agg=aggregateScore(m), winner=winnerOf(m), aName=teamName(m.teamA), bName=teamName(m.teamB);
-    [aName,bName].forEach(n=>{if(!table[n])table[n]={name:n,team:String(n).split(' + ').map(x=>x.trim()).filter(Boolean),pj:0,w:0,d:0,l:0,gf:0,gc:0,pts:0}});
-    let draw=!winner;
-    table[aName].pj++; table[bName].pj++;
-    table[aName].gf+=agg.a; table[aName].gc+=agg.b;
-    table[bName].gf+=agg.b; table[bName].gc+=agg.a;
-    if(draw){table[aName].d++; table[bName].d++; table[aName].pts++; table[bName].pts++; return;}
-    let wName=teamName(winner), lName=wName===aName?bName:aName;
-    table[wName].w++; table[wName].pts+=3; table[lName].l++;
-  });
-  let best=Object.values(table).sort((a,b)=>b.pts-a.pts||(b.gf-b.gc)-(a.gf-a.gc)||b.gf-a.gf||b.w-a.w||a.name.localeCompare(b.name))[0];
-  return best?{name:best.name,team:best.team,note:`Mejor rendimiento: ${best.pts} pts · ${best.w} PG · DG ${best.gf-best.gc}`}:null;
-}
-
-function renderHome(){
-  let s=stats(), has1v1=state.matches.some(m=>m.played&&!m.bye&&m.mode==="1v1"), leader=has1v1?s[0]?.player:"-";
-  let eloTop=eloRankings().players[0];
-  let streak=streakData().bestWin;
-  let records=titleRecords().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||Number(b.id)-Number(a.id));
-  let last1=records.find(r=>r.mode==='1v1');
-  let last2=records.find(r=>r.mode==='2v2');
-  let home2v2=best2v2HomeTeam(records);
-  let best=home2v2?.name||"-";
-  let bestTeam=home2v2?.team||[];
-  let bestNote=home2v2?.note||"Se actualizará cuando cierren un torneo 2vs2 o carguen resultados.";
-  let bestBlock=bestTeam.length?`<div class="championPhoto" style="margin:10px 0 8px">${teamHtml(bestTeam,'left','photoMini')}</div><div class="heroTitle" style="font-size:34px">${esc(best)}</div>`:`<div class="heroTitle">-</div>`;
-  let leaderBlock=leader!=="-"?`<div style="margin:10px 0 6px">${playerPhoto(leader,'photoBig')}</div><div style="font-size:28px;font-weight:1000;line-height:1.05">${esc(leader)}</div>`:`<div style="font-size:28px;font-weight:1000">-</div>`;
-  let champion2=last2?`<div class="recordCard"><span class="muted">Campeones vigentes 2vs2</span><div class="recordValue" style="font-size:18px">${teamFromNameHtml(last2.champion,'left','photoMini')}</div><p class="small">${esc(last2.name)}</p></div>`:`<div class="recordCard"><span class="muted">Campeones vigentes 2vs2</span><div class="recordValue">-</div></div>`;
-  let champion1=last1?`<div class="recordCard"><span class="muted">Campeón vigente 1vs1</span><div class="recordValue" style="font-size:18px">${playerInline(last1.champion,'photoMini')}</div><p class="small">${esc(last1.name)}</p></div>`:`<div class="recordCard"><span class="muted">Campeón vigente 1vs1</span><div class="recordValue">-</div></div>`;
-  $("home").innerHTML=`<div class="field"><div class="heroRow"><div><p class="whiteMuted">Equipo campeón 2vs2</p>${bestBlock}<p class="whiteMuted">${bestNote}</p></div><div class="heroIcon">🏆</div></div><div class="champ"><div><p class="eyebrow">Ranking general 1vs1</p>${leaderBlock}<p class="whiteMuted">${leader!=="-"?'Jugador con mejor rendimiento individual.':'Todavía no hay partidos 1vs1 jugados.'}</p></div><div class="champIcon">🏅</div></div></div><div class="grid3"><div class="stat"><span class="muted">Jugados</span><b>${state.matches.filter(m=>m.played&&!m.bye).length}</b></div><div class="stat"><span class="muted">Pend.</span><b>${state.matches.filter(m=>!m.played&&!m.bye).length}</b></div><div class="stat"><span class="muted">Torneos</span><b>${state.tournaments.length}</b></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>Plantel</b><span class="tag">PS2 / PES</span></div><div class="players">${PLAYERS.map(p=>`<div class="player"><span class="avatar" style="background:none;padding:0;overflow:hidden"><span style="display:grid;place-items:center;width:100%;height:100%">${p[0]}</span></span>${p}</div>`).join('')}</div></div><button class="btn" onclick="go('crear')">➕ Crear torneo 2vs2</button>`
-}
-function renderCrear(){let prev=ui.preview;let legMode=ui.legMode||ui.copaLegs||'Ida';$("crear").innerHTML=`<div class="field"><p class="whiteMuted">Armador de torneo</p><h2 style="margin:4px 0 6px;font-size:32px">Nuevo torneo</h2><p class="whiteMuted">La modalidad principal es 2vs2. También podés crear 1vs1 cuando quieran jugar individual.</p></div><div class="card"><div class="label">Nombre del torneo</div><input value="${esc(ui.newName)}" oninput="ui.newName=this.value" placeholder="Ej: 2vs2 Viernes"><div class="divider"></div><div class="label">Modalidad</div><div class="grid2"><button class="choice ${ui.mode==='2v2'?'active':''}" onclick="ui.mode='2v2';ui.newName='2vs2 Viernes';ui.preview=null;render()">2vs2</button><button class="choice ${ui.mode==='1v1'?'active':''}" onclick="ui.mode='1v1';ui.newName='1vs1 Apertura';ui.preview=null;render()">1vs1</button></div><div class="divider"></div><div class="label">Formato</div><div class="grid2"><button class="choice ${ui.format==='Liga'?'active':''}" onclick="ui.format='Liga';ui.preview=null;render()">Liga</button><button class="choice ${ui.format==='Copa'?'active':''}" onclick="ui.format='Copa';ui.preview=null;render()">Copa</button></div><p class="subtle" style="margin-top:8px">Liga: todos contra todos por puntos. Copa: eliminación directa. Ambas pueden ser solo ida o ida y vuelta.</p><div class="divider"></div><div class="label">Partidos del torneo</div><div class="grid2"><button class="choice ${legMode==='Ida'?'active':''}" onclick="ui.legMode='Ida';ui.copaLegs='Ida';ui.preview=null;render()">Solo ida</button><button class="choice ${legMode==='Ida y vuelta'?'active':''}" onclick="ui.legMode='Ida y vuelta';ui.copaLegs='Ida y vuelta';ui.preview=null;render()">Ida y vuelta</button></div><p class="subtle" style="margin-top:8px">En Liga ida y vuelta, cada cruce se juega dos veces. En Copa ida y vuelta, cada llave se define por global y penales si empatan.</p><div class="divider"></div><div class="label">Jugadores</div><div class="pills">${PLAYERS.map(p=>`<button class="pill ${ui.selected.includes(p)?'active':''}" onclick="togglePlayer('${p}')">${ui.selected.includes(p)?'⚽ ':''}${p}</button>`).join('')}</div><p class="subtle" style="margin-top:8px">Seleccionados: ${ui.selected.length}. Para 2vs2 conviene cantidad par.</p><div class="grid2" style="margin-top:14px"><button class="btnDark" onclick="preview()">🎲 Armar equipos</button><button class="btnLime" onclick="startTournamentBuild()">Crear torneo ›</button></div></div>${prev?`<div class="card"><b>Vista previa</b><p class="subtle">${esc(ui.mode)} · ${esc(ui.format)} · ${esc(legMode)}${prev.buildMethod?` · ${esc(prev.buildMethod)}`:''}</p><div class="divider"></div>${prev.units.map((u,i)=>`<div class="match"><b>${ui.mode==='1v1'?'Jugador':'Equipo'} ${i+1}</b><div style="margin-top:8px">${teamHtml(u)}</div></div>`).join('')}</div>`:''}<div class="card"><b>Gestión de torneos</b><p class="subtle">Podés eliminar torneos mal cargados. Se borran también sus partidos y resultados.</p><div class="divider"></div>${state.tournaments.length?state.tournaments.map(t=>`<div class="match"><div class="matchTop"><b>${esc(t.name)}</b><span class="tag">${esc(t.status||'En curso')}</span></div><p class="subtle">${tournamentSmallMeta(t)}</p><button class="choice" style="width:100%;margin-top:10px" onclick="deleteTournament(${t.id})">🗑️ Eliminar torneo</button></div>`).join(''):'<p class="empty">Todavía no hay torneos creados.</p>'}</div>`}
-function tournamentSelect(){return `<select onchange="ui.selectedTournament=+this.value;render()">${state.tournaments.map(t=>`<option value="${t.id}" ${t.id==ui.selectedTournament?'selected':''}>${esc(t.name)} · ${esc(dateLabel(t.createdAt||t.date||""))}</option>`).join('')}</select>`}
-function renderFixture(){
-  let t=selectedTournament();
-  if(!t){
-    $("fixture").innerHTML=`<div class="card"><h2 style="margin:0">Fixture</h2><p class="empty">Todavía no hay torneos. Creá uno para ver el fixture.</p><button class="btn" onclick="go('crear')">➕ Crear torneo</button></div>`;
-    return;
-  }
-  let ms=getMatches(t.id);
-  if(t.format==='Copa'){
-    let stages=stageOrder(ms);
-    $("fixture").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Fixture de Copa</h2><p class="subtle">Fixture completo: primero se juegan las idas de la instancia y después las vueltas. Los casilleros se completan con ganadores.<br>${tournamentDateText(t)}</p></div>${tournamentSelect()}</div><div class="divider"></div><button class="choice" style="width:100%" onclick="deleteTournament(${t.id})">🗑️ Eliminar este torneo</button></div>${bracket(ms,false)}<div class="card"><b>Fixture completo</b><p class="subtle">Los resultados se cargan y corrigen solo desde acá. En ida y vuelta, cada partido aparece separado y en orden.</p><div class="divider"></div>${stages.map(st=>cupFixtureStageHtml(ms,st,true)).join('')}</div>${finalPanel(t)}`;
-    return;
-  }
-  $("fixture").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Fixture</h2><p class="subtle">Partidos ordenados para reducir esperas.<br>${tournamentDateText(t)}</p></div>${tournamentSelect()}</div><div class="divider"></div><button class="choice" style="width:100%" onclick="deleteTournament(${t.id})">🗑️ Eliminar este torneo</button></div><div class="card"><b>${esc(t.name)}</b><p class="subtle">${tournamentSmallMeta(t)}</p><div class="divider"></div>${ms.length?ms.map(m=>matchCard(m,true)).join(''):'<p class="empty">No hay partidos.</p>'}</div>${finalPanel(t)}`;
-}
-
-function scoreValue(v){return v!==undefined&&v!==null&&String(v)!==''}
-function cupTwoLegged(m){return m&&m.format==='Copa'&&matchLegMode(m)==='Ida y vuelta'&&!m.bye}
-function cupLegDone(m,leg){return leg==='ida'?scoreValue(m.scoreA)&&scoreValue(m.scoreB):scoreValue(m.scoreA2)&&scoreValue(m.scoreB2)}
-function cupLegScore(m,leg){
-  if(!cupLegDone(m,leg))return 'vs';
-  return leg==='ida'?`${m.scoreA} - ${m.scoreB}`:`${m.scoreA2} - ${m.scoreB2}`;
-}
-function cupLegTeams(m,leg){return leg==='ida'?{home:m.teamA,away:m.teamB}:{home:m.teamB,away:m.teamA}}
-function cupLegCard(m,leg,editable=true){
-  if(m.bye)return matchCard(m,editable);
-  let t=state.tournaments.find(x=>x.id===m.tournamentId);
-  let pending=!teamReady(m.teamA)||!teamReady(m.teamB);
-  let done=cupLegDone(m,leg);
-  let teams=cupLegTeams(m,leg);
-  let label=leg==='ida'?'Partido de ida':'Partido de vuelta';
-  let locked=t?.locked;
-  let btn='';
-  if(editable){
-    if(locked)btn=`<p class="small" style="margin-top:10px">🔒 Torneo cerrado</p>`;
-    else if(pending)btn=`<p class="small" style="margin-top:10px">Se completa cuando avancen los ganadores anteriores.</p>`;
-    else if(leg==='vuelta'&&!cupLegDone(m,'ida'))btn=`<p class="small" style="margin-top:10px">Primero cargá el partido de ida.</p>`;
-    else btn=`<button class="${done?'btnEdit':'btnLoad'}" style="width:100%;margin-top:12px" onclick="openScoreLeg(${m.id},'${leg}')">${done?'✏️ Corregir '+label.toLowerCase():'✅ Cargar '+label.toLowerCase()}</button>`;
-  }
-  return `<div class="match ${done?'played':''}"><div class="matchTop"><span class="tag">${esc(m.stage||m.round)}</span><span class="round">${esc(m.code||m.round)} · ${label}</span></div><div class="vs"><div class="team">${teamHtml(teams.home)}</div><div class="score">${cupLegScore(m,leg)}</div><div class="team right">${teamHtml(teams.away,'right')}</div></div>${btn}</div>`;
-}
-function cupTieSummary(m){
-  if(!cupTwoLegged(m))return '';
-  if(!cupLegDone(m,'ida')&&!cupLegDone(m,'vuelta'))return '';
-  let agg=aggregateScore(m), w=m.played?winnerOf(m):null;
-  let pen=(agg.a===agg.b&&scoreValue(m.penA)&&scoreValue(m.penB))?` · Penales ${m.penA}-${m.penB}`:'';
-  let status=w?`Ganador: ${esc(teamName(w))}`:(cupLegDone(m,'ida')&&cupLegDone(m,'vuelta')?'Global empatado: faltan penales':'Llave en curso');
-  return `<div class="editNote" style="margin:0 0 12px"><b>Global ${esc(teamName(m.teamA))} ${agg.a} - ${agg.b} ${esc(teamName(m.teamB))}${pen}</b><br>${status}</div>`;
-}
-function cupFixtureStageHtml(ms,st,editable=true){
-  let v=visibleCupMatches(ms,st);
-  let done=v.filter(m=>m.bye?isResolvedBye(m):m.played).length;
-  let byes=v.filter(m=>m.bye);
-  let normal=v.filter(m=>!m.bye);
-  let twoLeg=normal.some(cupTwoLegged);
-  let body='';
-  if(twoLeg){
-    body+=byes.map(m=>matchCard(m,editable)).join('');
-    body+=normal.map(m=>cupLegCard(m,'ida',editable)).join('');
-    body+=normal.map(m=>cupLegCard(m,'vuelta',editable)).join('');
-    body+=normal.map(cupTieSummary).join('');
-  }else{
-    body+=v.map(m=>matchCard(m,editable)).join('');
-  }
-  return `<div class="stageTitle"><b>${esc(st)}</b><span class="small">${done}/${v.length}</span></div>${body}`;
-}
-function matchCard(m,editable=true){let t=state.tournaments.find(x=>x.id===m.tournamentId);if(m.bye){if(!isVisibleBye(m))return "";let bw=byeDisplayTeam(m);let resolved=isResolvedBye(m);return `<div class="match ${resolved?'played':''}"><div class="matchTop"><span class="tag">${esc(m.stage)}</span><span class="round">Pase libre</span></div><div class="vs"><div class="team">${teamHtml(bw)}</div><div class="score">➡️</div><div class="team right">${resolved?'Avanza':'Espera'}</div></div><p class="small" style="margin-top:10px">${byeStatusText(m)}</p></div>`;}let pending=!teamReady(m.teamA)||!teamReady(m.teamB);let btn="";if(editable){if(t?.locked)btn=`<p class="small" style="margin-top:10px">🔒 Torneo cerrado</p>`;else if(pending)btn=`<p class="small" style="margin-top:10px">Se completa cuando avancen los ganadores anteriores.</p>`;else btn=`<button class="${m.played?'btnEdit':'btnLoad'}" style="width:100%;margin-top:12px" onclick="openScore(${m.id})">${m.played?'✏️ Corregir resultado':'✅ Cargar resultado'}</button>`;}return `<div class="match ${m.played?'played':''}"><div class="matchTop"><span class="tag">${esc(m.stage||m.round)}</span><span class="round">${esc(m.code||m.round)}</span></div><div class="vs"><div class="team">${teamHtml(m.teamA)}</div><div class="score">${scoreText(m)}</div><div class="team right">${teamHtml(m.teamB,'right')}</div></div>${btn}</div>`}
-function bracket(ms,editable=false){let stages=stageOrder(ms);if(!stages.length)return '<div class="card"><b>Llaves de Copa</b><p class="empty">Todavía no hay llaves creadas.</p></div>';let final=ms.find(m=>m.stage==='Final'&&m.played&&!m.bye),champion=final?teamName(winnerOf(final)):null;return `<div class="cupVisual"><div class="cupHeader"><div><h3 class="cupTitle">Llaves de Copa</h3><p class="cupSub">Cada ganador alimenta el siguiente casillero; los pases libres aparecen cuando hacen falta.</p></div><div class="cupTrophy">🏆</div></div><div class="cupScroll"><div class="cupGrid">${stages.map(st=>{let stageMatches=visibleCupMatches(ms,st);let done=stageMatches.filter(m=>m.bye?isResolvedBye(m):m.played).length;return `<div class="cupColumn"><div class="cupStage"><b>${esc(st)}</b><span class="cupCount">${done}/${stageMatches.length}</span></div>${stageMatches.map(m=>{if(m.bye){let bw=byeDisplayTeam(m);let resolved=isResolvedBye(m);return `<div class="cupNode cupBye"><div class="cupTeam ${resolved?'win':''}"><span>${teamHtml(bw,'left','photoTiny')}</span><span>➡️</span></div><div class="cupStatus ${resolved?'win':''}">${byeStatusText(m)}</div></div>`;}let w=m.played?winnerOf(m):null,aWins=w&&teamName(w)===teamName(m.teamA),bWins=w&&teamName(w)===teamName(m.teamB),winner=w?teamName(w):null;let nextText=m.nextMatchId?`Avanza a ${esc(findMatch(m.nextMatchId)?.stage||'siguiente instancia')}`:'Define campeón';return `<div class="cupNode ${st==='Final'?'cupFinal':''}"><div class="cupTeam ${aWins?'win':''}"><span>${teamHtml(m.teamA,'left','photoTiny')}</span><span>${m.played?scoreText(m):''}</span></div><div class="cupVs">vs</div><div class="cupTeam ${bWins?'win':''}"><span>${teamHtml(m.teamB,'left','photoTiny')}</span><span>${m.played?'':''}</span></div><div class="cupStatus ${winner?'win':''}">${winner?`Ganador: ${esc(winner)} · ${nextText}`:(!teamReady(m.teamA)||!teamReady(m.teamB)?'Esperando ganadores anteriores':nextText)}</div>${editable&&canEditMatch(m)?`<button class="${m.played?'btnEdit':'btnLoad'} miniBtn" onclick="openScore(${m.id})">${m.played?'✏️ Corregir resultado':'✅ Cargar resultado'}</button>`:''}</div>`}).join('')}</div>`}).join('')}</div></div>${champion?`<div class="cupChampion"><div class="small">CAMPEÓN</div><div class="championPhoto" style="justify-content:center">${teamFromNameHtml(champion,'left','photoMini')}</div></div>`:''}</div>`}
-function renderTabla(){let t=selectedTournament();if(!t){$("tabla").innerHTML=`<div class="card"><h2 style="margin:0">Tabla</h2><p class="empty">Todavía no hay torneos ni partidos cargados.</p></div>`;return}if(t.format==='Copa'){let ms=getMatches(t.id);$("tabla").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Llaves</h2><p class="subtle">Vista visual. Los resultados se editan únicamente desde Fixture.<br>${tournamentDateText(t)}</p></div>${tournamentSelect()}</div></div>${bracket(ms,false)}${finalPanel(t)}`;return}let isTeams=t.mode==='2v2',table=isTeams?teamStats(t.id):stats(t.id);$("tabla").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Tabla</h2><p class="subtle">${isTeams?'Ranking por equipos del torneo seleccionado':'Ranking individual del torneo seleccionado'}<br>${tournamentDateText(t)}</p></div>${tournamentSelect()}</div></div><div class="card"><div class="tableHead"><span>#</span><span>${isTeams?'Equipo':'Jugador'}</span><span>Pts</span><span>PJ</span><span>DG</span><span>GF</span></div>${table.map((s,i)=>`<div class="tableRow"><span class="pos ${i===0&&s.pts>0?'first':''}">${i+1}</span><span><b>${isTeams?teamFromNameHtml(s.player):playerInline(s.player)}</b><div class="small">PG ${s.pg} · PE ${s.pe} · PP ${s.pp}</div></span><b>${s.pts}</b><b>${s.pj}</b><b>${s.diff}</b><b>${s.gf}</b></div>`).join('')}</div>${finalPanel(t)}`}
-function directMatchUnits(mode){
-  let base=state.matches.filter(m=>m.played&&!m.bye&&m.mode===mode);
-  let out=[];
-  base.forEach(m=>{
-    if(cupTwoLegged(m)){
-      if(cupLegDone(m,'ida'))out.push({...m,scoreA:m.scoreA,scoreB:m.scoreB,scoreA2:"",scoreB2:"",legMode:"Ida",copaLegs:"Ida",round:`${m.round||m.stage} · Ida`,stage:m.stage,code:`${m.code||''} Ida`});
-      if(cupLegDone(m,'vuelta'))out.push({...m,teamA:[...(m.teamB||[])],teamB:[...(m.teamA||[])],scoreA:m.scoreA2,scoreB:m.scoreB2,scoreA2:"",scoreB2:"",legMode:"Ida",copaLegs:"Ida",round:`${m.round||m.stage} · Vuelta`,stage:m.stage,code:`${m.code||''} Vuelta`});
-    }else out.push(m);
-  });
-  return out;
-}
-function renderCara(){let teamPairs=[...new Set(state.matches.filter(m=>m.mode==='2v2'&&!isPlaceholder(m.teamA)).flatMap(m=>[teamName(m.teamA),teamName(m.teamB)]))];let content=ui.hType==='players'?caraPlayers():caraTeams(teamPairs);let filt=`<div class="divider"></div><div class="label">Filtro</div><div class="grid3"><button class="choice ${ui.hFormat==='Todos'?'active':''}" onclick="ui.hFormat='Todos';render()">Todos</button><button class="choice ${ui.hFormat==='Liga'?'active':''}" onclick="ui.hFormat='Liga';render()">Ligas</button><button class="choice ${ui.hFormat==='Copa'?'active':''}" onclick="ui.hFormat='Copa';render()">Copas</button></div>`;$('cara').innerHTML=`<div class="field"><h2 style="margin:0 0 6px">Cara a Cara</h2><p class="whiteMuted">Compará el historial directo entre jugadores o equipos.</p></div><div class="card"><div class="grid2"><button class="choice ${ui.hType==='players'?'active':''}" onclick="ui.hType='players';render()">Jugadores</button><button class="choice ${ui.hType==='teams'?'active':''}" onclick="ui.hType='teams';render()">Equipos 2vs2</button></div>${filt}<div class="divider"></div>${content}</div>`}
-
-function caraPlayers(){let scope=ui.hFormat==='Todos'?'General':ui.hFormat;let ms=directMatchUnits('1v1').filter(m=>matchInScope(m,scope)).filter(m=>[...m.teamA,...m.teamB].includes(ui.hA)&&[...m.teamA,...m.teamB].includes(ui.hB));let a=0,b=0,e=0;ms.forEach(m=>{let w=winnerOf(m);if(!w)e++;else{let wp=w[0];if(wp===ui.hA)a++;if(wp===ui.hB)b++;}});return `<div class="grid2"><select onchange="ui.hA=this.value;render()">${PLAYERS.map(p=>`<option ${p===ui.hA?'selected':''}>${p}</option>`).join('')}</select><select onchange="ui.hB=this.value;render()">${PLAYERS.filter(p=>p!==ui.hA).map(p=>`<option ${p===ui.hB?'selected':''}>${p}</option>`).join('')}</select></div><div class="field" style="margin-top:12px;background:linear-gradient(135deg,#020617,#064e3b)"><p class="eyebrow">Resultados individuales 1vs1 · ${scopeLabel(scope)}</p><div class="versusFace"><div class="faceCard">${playerPhoto(ui.hA,'photoBig')}<b>${esc(ui.hA)}</b></div><div class="faceScore">${a} - ${b}</div><div class="faceCard">${playerPhoto(ui.hB,'photoBig')}<b>${esc(ui.hB)}</b></div></div><p class="whiteMuted" style="margin-top:10px">Empates ${e} · ${ms.length} partidos</p></div><div style="margin-top:12px">${ms.length?ms.map(m=>matchCard(m,false)).join(''):'<p class="empty">Todavía no hay partidos entre ellos.</p>'}</div>`}
-
-function caraTeams(teamPairs){if(!teamPairs.length)return '<p class="empty">Todavía no hay equipos 2vs2 creados.</p>';if(!teamPairs.includes(ui.tA))ui.tA=teamPairs[0];if(!teamPairs.includes(ui.tB))ui.tB=teamPairs.find(x=>x!==ui.tA)||teamPairs[0];let scope=ui.hFormat==='Todos'?'General':ui.hFormat;let ms=directMatchUnits('2v2').filter(m=>matchInScope(m,scope)).filter(m=>((teamName(m.teamA)===ui.tA&&teamName(m.teamB)===ui.tB)||(teamName(m.teamA)===ui.tB&&teamName(m.teamB)===ui.tA)));let a=0,b=0,e=0;ms.forEach(m=>{let w=winnerOf(m);if(!w)e++;else{let wn=teamName(w);if(wn===ui.tA)a++;if(wn===ui.tB)b++;}});return `<div class="grid2"><select onchange="ui.tA=this.value;render()">${teamPairs.map(t=>`<option ${t===ui.tA?'selected':''}>${esc(t)}</option>`).join('')}</select><select onchange="ui.tB=this.value;render()">${teamPairs.filter(t=>t!==ui.tA).map(t=>`<option ${t===ui.tB?'selected':''}>${esc(t)}</option>`).join('')}</select></div><div class="field" style="margin-top:12px;background:linear-gradient(135deg,#020617,#064e3b)"><p class="eyebrow">Resultados equipos 2vs2 · ${scopeLabel(scope)}</p><div class="versusFace"><div class="faceCard">${teamFromNameHtml(ui.tA,'left','photoMini')} </div><div class="faceScore">${a} - ${b}</div><div class="faceCard">${teamFromNameHtml(ui.tB,'left','photoMini')}</div></div><p class="whiteMuted" style="margin-top:10px">Empates ${e} · ${ms.length} cruces</p></div><div style="margin-top:12px">${ms.length?ms.map(m=>matchCard(m,false)).join(''):'<p class="empty">Todavía no hay partidos entre estos equipos.</p>'}</div>`}
-
-
-function orderedPlayedMatches(){
-  return state.matches.filter(m=>m.played&&!m.bye).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||Number(a.id)-Number(b.id));
-}
-function matchPlayers(m){return [...(m.teamA||[]),...(m.teamB||[])].filter(p=>PLAYERS.includes(p))}
-function matchWinnerPlayers(m){let w=winnerOf(m);return Array.isArray(w)?w.filter(p=>PLAYERS.includes(p)):[]}
-function matchLoserPlayers(m){let w=matchWinnerPlayers(m);if(!w.length)return [];return matchPlayers(m).filter(p=>!w.includes(p))}
-function allPlayerStats(scope='General'){
-  let base={};PLAYERS.forEach(p=>base[p]={name:p,pj:0,w:0,d:0,l:0,gf:0,gc:0,finals:0,titles:0});
-  orderedPlayedMatches().filter(m=>matchInScope(m,scope)).forEach(m=>{
-    let a=Number(m.scoreA),b=Number(m.scoreB),draw=a===b,wp=matchWinnerPlayers(m),lp=matchLoserPlayers(m);
-    (m.teamA||[]).forEach(p=>{if(!base[p])return;base[p].pj++;base[p].gf+=a;base[p].gc+=b});
-    (m.teamB||[]).forEach(p=>{if(!base[p])return;base[p].pj++;base[p].gf+=b;base[p].gc+=a});
-    if(draw&&!wp.length)matchPlayers(m).forEach(p=>base[p].d++); else {wp.forEach(p=>base[p]&&(base[p].w++));lp.forEach(p=>base[p]&&(base[p].l++));}
-    if(m.format==='Copa'&&m.stage==='Final')matchPlayers(m).forEach(p=>base[p]&&(base[p].finals++));
-  });
-  titleRecordsScoped(scope).forEach(r=>{
-    let ps=r.mode==='2v2'?String(r.champion||'').split(' + ').map(x=>x.trim()).filter(Boolean):[r.champion];
-    ps.forEach(p=>{if(base[p])base[p].titles++});
-  });
-  return Object.values(base).map(x=>({...x,diff:x.gf-x.gc,eff:x.pj?Math.round((x.w/x.pj)*100):0}));
-}
-
-
-function historicalRanking(scope='General'){
-  let base={};
-  PLAYERS.forEach(p=>base[p]={name:p,points:0,pj:0,w:0,d:0,l:0,titles:0});
-  orderedPlayedMatches().filter(m=>matchInScope(m,scope)).forEach(m=>{
-    let players=matchPlayers(m);
-    if(!players.length)return;
-    let wp=matchWinnerPlayers(m);
-    let lp=matchLoserPlayers(m);
-    let agg=aggregateScore(m);
-    let draw=!wp.length && agg.a===agg.b;
-    players.forEach(p=>{if(base[p])base[p].pj++});
-    if(draw){players.forEach(p=>{if(base[p]){base[p].d++;base[p].points+=1;}})}
-    else{wp.forEach(p=>{if(base[p]){base[p].w++;base[p].points+=3;}});lp.forEach(p=>{if(base[p])base[p].l++;});}
-  });
-  titleRecordsScoped(scope).forEach(r=>{
-    let ps=r.mode==='2v2'?String(r.champion||'').split(' + ').map(x=>x.trim()).filter(Boolean):[r.champion];
-    ps.forEach(p=>{if(base[p]){base[p].titles++;base[p].points+=10;}});
-  });
-  return Object.values(base).filter(x=>x.points>0||x.pj>0||x.titles>0).sort((a,b)=>b.points-a.points||b.titles-a.titles||b.w-a.w||a.name.localeCompare(b.name));
-}
-
-
-function eloRankings(){
-  // ELO individual: solo cuenta partidos 1vs1 realmente jugados.
-  // Así evitamos que un jugador sin partidos (ej: Alva) aparezca arriba con 1500 puntos por defecto.
-  let elo={}, games={};
-  PLAYERS.forEach(p=>{elo[p]=1500;games[p]=0});
-  const k=32;
-  orderedPlayedMatches().filter(m=>m.mode==='1v1' && !m.bye).forEach(m=>{
-    let aTeam=(m.teamA||[]).filter(p=>PLAYERS.includes(p));
-    let bTeam=(m.teamB||[]).filter(p=>PLAYERS.includes(p));
-    if(aTeam.length!==1||bTeam.length!==1)return;
-    let a=aTeam[0], b=bTeam[0];
-    let ea=1/(1+Math.pow(10,(elo[b]-elo[a])/400));
-    let sa=.5;
-    let w=winnerOf(m);
-    if(w){
-      let wn=teamName(w);
-      if(wn===teamName(m.teamA))sa=1;
-      else if(wn===teamName(m.teamB))sa=0;
-    }
-    let delta=Math.round(k*(sa-ea));
-    elo[a]+=delta;
-    elo[b]-=delta;
-    games[a]++;
-    games[b]++;
-  });
-  return {
-    players:Object.entries(elo)
-      .filter(([name])=>games[name]>0)
-      .map(([name,val])=>({name,elo:Math.round(val),games:games[name]}))
-      .sort((a,b)=>b.elo-a.elo||b.games-a.games||a.name.localeCompare(b.name))
-  };
-}
-function streakData(scope='General'){
-  let cur={}, best={};
-  PLAYERS.forEach(p=>{
-    cur[p]={name:p,type:'',count:0};
-    best[p]={name:p,bestWin:0,bestLoss:0};
-  });
-  orderedPlayedMatches().filter(m=>matchInScope(m,scope)).forEach(m=>{
-    let participants=[...(m.teamA||[]),...(m.teamB||[])];
-    let wp=matchWinnerPlayers(m), lp=matchLoserPlayers(m);
-
-    // Si hubo empate, se cortan tanto las rachas positivas como negativas
-    // de quienes jugaron ese partido.
-    if(!wp.length){
-      participants.forEach(p=>{cur[p].type='D';cur[p].count=0;});
-      return;
-    }
-
-    wp.forEach(p=>{
-      cur[p].count=cur[p].type==='W'?cur[p].count+1:1;
-      cur[p].type='W';
-      best[p].bestWin=Math.max(best[p].bestWin,cur[p].count);
-    });
-    lp.forEach(p=>{
-      cur[p].count=cur[p].type==='L'?cur[p].count+1:1;
-      cur[p].type='L';
-      best[p].bestLoss=Math.max(best[p].bestLoss,cur[p].count);
-    });
-  });
-  let arr=Object.values(best);
-  let bestWin=arr.filter(x=>x.bestWin>0).sort((a,b)=>b.bestWin-a.bestWin||a.name.localeCompare(b.name))[0]||null;
-  let bestLoss=arr.filter(x=>x.bestLoss>0).sort((a,b)=>b.bestLoss-a.bestLoss||a.name.localeCompare(b.name))[0]||null;
-  return {
-    bestWin:bestWin?{name:bestWin.name,count:bestWin.bestWin}:null,
-    bestLoss:bestLoss?{name:bestLoss.name,count:bestLoss.bestLoss}:null,
-    all:arr
-  };
-}
-function recordsData(scope='General'){
-  let st=allPlayerStats(scope), titles=fameData().players.map(p=>({...p,total:titleRecordsScoped(scope).reduce((acc,r)=>{
-    let ps=r.mode==='2v2'?String(r.champion||'').split(' + ').map(x=>x.trim()).filter(Boolean):[r.champion];
-    return acc+(ps.includes(p.name)?1:0);
-  },0)}));
-  let top=(arr,fn)=>{let clean=arr.filter(x=>fn(x)>0).sort((a,b)=>fn(b)-fn(a)||a.name.localeCompare(b.name)); if(!clean.length)return []; let max=fn(clean[0]); return clean.filter(x=>fn(x)===max).slice(0,2);};
-  let effClean=st.filter(x=>x.pj>=3&&x.eff>0).sort((a,b)=>b.eff-a.eff||b.w-a.w||a.name.localeCompare(b.name));
-  let eff=effClean.length?effClean.filter(x=>x.eff===effClean[0].eff).slice(0,2):[];
-  return {goals:top(st,x=>x.gf),wins:top(st,x=>x.w),finals:top(st,x=>x.finals),titles:top(titles,x=>x.total),eff:eff,diff:top(st,x=>x.diff)};
-}
-
-function classicsData(){
-  let map={};
-  directMatchUnits('1v1').forEach(m=>{
-    let a=m.teamA?.[0], b=m.teamB?.[0]; if(!a||!b)return;
-    let key=[a,b].sort().join('|'); if(!map[key])map[key]={a:[a,b].sort()[0],b:[a,b].sort()[1],pj:0,wa:0,wb:0,d:0};
-    let r=map[key]; r.pj++;
-    let w=winnerOf(m)?.[0]; if(!w)r.d++; else if(w===r.a)r.wa++; else if(w===r.b)r.wb++;
-  });
-  return Object.values(map).sort((x,y)=>y.pj-x.pj).slice(0,3);
-}
-function achievementsData(){
-  let out=[];
-  let titles=fameData().players;
-  titles.filter(p=>p.total>=3).slice(0,3).forEach(p=>out.push({icon:'🏆',title:'Leyenda de títulos',desc:`${p.name} ya suma ${p.total} títulos.`}));
-  titles.filter(p=>p.copa1>=3).slice(0,2).forEach(p=>out.push({icon:'👑',title:'Rey de Copas',desc:`${p.name} ganó ${p.copa1} copas 1vs1.`}));
-  state.tournaments.filter(t=>t.locked&&t.format==='Liga').forEach(t=>{
-    let champ=t.champion||getTournamentChampion(t); if(!champ)return;
-    let matches=getMatches(t.id).filter(m=>m.played&&!m.bye&&(teamName(m.teamA)===champ||teamName(m.teamB)===champ));
-    let lost=matches.some(m=>{let w=winnerOf(m);return w&&teamName(w)!==champ});
-    if(matches.length&&!lost)out.push({icon:'🛡️',title:'Invicto',desc:`${champ} ganó ${t.name} sin perder.`});
-  });
-  let recs=titleRecords().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||Number(a.id)-Number(b.id));
-  for(let i=1;i<recs.length;i++) if(recs[i].champion===recs[i-1].champion) out.push({icon:'🔥',title:'Bicampeón',desc:`${recs[i].champion} ganó dos torneos seguidos.`});
-  return out.slice(0,8);
-}
-function championVigentes(){
-  let recs=titleRecords().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||Number(b.id)-Number(a.id));
-  return {one:recs.find(r=>r.mode==='1v1')||null,two:recs.find(r=>r.mode==='2v2')||null};
-}
-function renderHistorial(){
-  let rankingScope=ui.histRankingScope||'General';
-  let recordsScope=ui.histRecordsScope||'General';
-  let streakScope=ui.histStreakScope||'General';
-  let fameScope=ui.histFameScope||'General';
-  let champsScope=ui.histChampsScope||'General';
-  let recentScope=ui.histRecentScope||'General';
-  let records=titleRecordsScoped(champsScope).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||Number(b.id)-Number(a.id));
-  let fame=fameDataScoped(fameScope);
-  let historical=historicalRanking(rankingScope);
-  let rec=recordsData(recordsScope);
-  let streak=streakData(streakScope);
-  let classics=classicsData();
-  let achievements=achievementsData();
-  let vig=championVigentes();
-  let ms=state.matches.filter(m=>m.played&&!m.bye).filter(m=>matchInScope(m,recentScope)).sort((a,b)=>b.id-a.id).slice(0,12);
-  const localTabs=(key,current)=>`<div class="grid3" style="margin-top:10px"><button class="choice ${current==='General'?'active':''}" onclick="ui.${key}='General';render()">General</button><button class="choice ${current==='Liga'?'active':''}" onclick="ui.${key}='Liga';render()">Ligas</button><button class="choice ${current==='Copa'?'active':''}" onclick="ui.${key}='Copa';render()">Copas</button></div>`;
-  const scopeBadge=(scope)=>`<span class="tag" style="background:#0f172a">${scopeLabel(scope)}</span>`;
-  const podium=fame.players.slice(0,3);
-  const podiumHtml=podium.length?`<div class="leaderPodium">${[podium[1],podium[0],podium[2]].map((p,idx)=>p?`<div class="podiumCard ${idx===1?'first':''}"><div>${idx===1?'🥇':idx===0?'🥈':'🥉'}</div>${playerPhoto(p.name,idx===1?'photoBig':'photoMini')}<b style="display:block;margin-top:6px">${esc(p.name)}</b><span class="small">${p.total} títulos</span></div>`:`<div></div>`).join('')}</div>`:'<p class="empty">Todavía no hay títulos cerrados para este filtro.</p>';
-  const playerRows=fame.players.length?fame.players.map((p,i)=>`<div class="tableRow"><span class="pos ${i===0?'first':''}">${i+1}</span><span><b>${playerInline(p.name)}</b><div class="small">1vs1: ${p.liga1} ligas · ${p.copa1} copas<br>2vs2: ${p.liga2} ligas · ${p.copa2} copas</div></span><b>${p.total}</b><b></b><b></b><b></b></div>`).join(''):'<p class="empty">Todavía no hay títulos cerrados para este filtro.</p>';
-  const teamRows=fame.teams.length?fame.teams.map((p,i)=>`<div class="tableRow"><span class="pos ${i===0?'first':''}">${i+1}</span><span><b>${teamFromNameHtml(p.name)}</b><div class="small">${p.liga2} ligas 2vs2 · ${p.copa2} copas 2vs2</div></span><b>${p.total}</b><b></b><b></b><b></b></div>`).join(''):'<p class="empty">Todavía no hay títulos 2vs2 cerrados para este filtro.</p>';
-  const historicalRows=historical.length?historical.map((p,i)=>`<div class="tableRow"><span class="pos ${i===0?'first':''}">${i+1}</span><span><b>${playerInline(p.name)}</b><div class="small">${p.pj} PJ · ${p.w} PG · ${p.d} PE · ${p.l} PP · ${p.titles} título${p.titles===1?'':'s'}</div></span><b>${p.points}</b><b></b><b></b><b></b></div>`).join(''):'<p class="empty">Todavía no hay datos para este filtro.</p>';
-  const championRows=records.length?records.map(r=>{let t=state.tournaments.find(x=>x.id===r.id), runner=t?getTournamentRunnerUp(t):'';return `<div class="timelineItem"><div class="matchTop"><span class="tag">${esc(r.mode)} · ${esc(r.format)}</span><span class="round">${esc(r.date||'Finalizado')}</span></div><b>${esc(r.name)}</b><div class="championPhoto">🏆 ${r.mode==='2v2'?teamFromNameHtml(r.champion):playerInline(r.champion)}</div>${runner?`<p class="small">Subcampeón: ${r.mode==='2v2'?teamFromNameHtml(runner,'left','photoTiny'):playerInline(runner,'photoTiny')}</p>`:''}</div>`}).join(''):'<p class="empty">Cuando cierres un torneo de este filtro, aparece acá el campeón.</p>';
-  const recentRows=ms.length?ms.map(m=>`<div class="match played"><div class="matchTop"><span class="tag">${esc(m.mode)} · ${esc(m.format)}</span><span class="round">${esc(m.date)}</span></div><div class="vs"><div class="team">${teamHtml(m.teamA)}</div><div class="score">${scoreText(m)}</div><div class="team right">${teamHtml(m.teamB,'right')}</div></div><p class="subtle" style="margin-top:8px">${esc(m.tournamentName)} · ${esc(m.stage||m.round)}</p></div>`).join(''):'<p class="empty">Todavía no hay resultados cargados para este filtro.</p>';
-  const statCard=(title,arr,val,sub)=>{let list=Array.isArray(arr)?arr:(arr?[arr]:[]);return `<div class="recordCard"><span class="muted">${title}</span>${list.length?`<div class="recordValue" style="font-size:18px">${list.map(x=>playerInline(x.name,'photoMini')).join('<div style="height:6px"></div>')}</div><p class="small">${val} ${sub}${list.length>1?' · récord compartido':''}</p>`:`<div class="recordValue">-</div>`}</div>`};
-  const recordsHtml=`<div class="historyGrid">${statCard('Más goles',rec.goals,rec.goals?.[0]?.gf||0,'goles')}${statCard('Más victorias',rec.wins,rec.wins?.[0]?.w||0,'victorias')}${statCard('Más finales',rec.finals,rec.finals?.[0]?.finals||0,'finales')}${statCard('Mejor efectividad',rec.eff,rec.eff?.[0]?.eff||0,'% victorias')}${statCard('Más títulos',rec.titles,rec.titles?.[0]?.total||0,'títulos')}${statCard('Mejor diferencia',rec.diff,rec.diff?.[0]?.diff||0,'DG')}</div>`;
-  const streakHtml=`<div class="historyGrid"><div class="recordCard"><span class="muted">🔥 Mejor racha positiva</span>${streak.bestWin?`<div class="recordValue streakWin" style="font-size:18px">${playerInline(streak.bestWin.name,'photoMini')}</div><p class="small">${streak.bestWin.count} victorias seguidas</p>`:`<div class="recordValue">-</div>`}</div><div class="recordCard"><span class="muted">😭 Peor racha histórica</span>${streak.bestLoss?`<div class="recordValue streakLoss" style="font-size:18px">${playerInline(streak.bestLoss.name,'photoMini')}</div><p class="small">${streak.bestLoss.count} derrotas seguidas</p>`:`<div class="recordValue">-</div>`}</div></div>`;
-  const classicsHtml=classics.length?classics.map(c=>`<div class="match"><div class="matchTop"><span class="tag">${c.pj} partidos</span><span class="round">Clásico</span></div><div class="vs"><div class="team">${playerInline(c.a)}</div><div class="score">${c.wa} - ${c.wb}</div><div class="team right">${playerInline(c.b)}</div></div><p class="small" style="margin-top:8px">Empates: ${c.d}</p></div>`).join(''):'<p class="empty">Todavía faltan más cruces 1vs1.</p>';
-  const achievementsHtml=achievements.length?achievements.map(a=>`<div class="achievement"><b>${a.icon} ${esc(a.title)}</b><p class="small">${esc(a.desc)}</p></div>`).join(''):'<p class="empty">Los logros aparecen cuando haya más torneos cerrados.</p>';
-  const vigenteHtml=`<div class="historyGrid"><div class="recordCard"><span class="muted">👑 Campeón vigente 1vs1</span>${vig.one?`<div class="recordValue" style="font-size:18px">${playerInline(vig.one.champion,'photoMini')}</div><p class="small">${esc(vig.one.name)}</p>`:`<div class="recordValue">-</div>`}</div><div class="recordCard"><span class="muted">👑 Campeón vigente 2vs2</span>${vig.two?`<div class="recordValue" style="font-size:18px">${teamFromNameHtml(vig.two.champion,'left','photoMini')}</div><p class="small">${esc(vig.two.name)}</p>`:`<div class="recordValue">-</div>`}</div></div>`;
-  $("historial").innerHTML=`<h2 style="margin:0">Historial</h2><div class="card"><b>👑 Campeones Vigentes</b><p class="subtle">Últimos torneos finalizados. Bloque general, sin filtro.</p><div class="divider"></div>${vigenteHtml}</div><div class="card"><div class="matchTop"><b>🏆 Salón de la Fama</b>${scopeBadge(fameScope)}</div><p class="subtle">Acumulado histórico de títulos según el filtro de este bloque.</p>${localTabs('histFameScope',fameScope)}<div class="divider"></div>${podiumHtml}<div class="divider"></div><div class="tableHead"><span>#</span><span>Jugador</span><span>Tít.</span><span></span><span></span><span></span></div>${playerRows}</div><div class="card"><div class="matchTop"><b>🏆 Ranking Histórico</b>${scopeBadge(rankingScope)}</div><p class="subtle">Victoria +3, empate +1 y cada título cerrado +10.</p>${localTabs('histRankingScope',rankingScope)}<div class="divider"></div><div class="tableHead"><span>#</span><span>Jugador</span><span>Pts</span><span></span><span></span><span></span></div>${historicalRows}</div><div class="card"><div class="matchTop"><b>📊 Récords históricos</b>${scopeBadge(recordsScope)}</div><p class="subtle">Este filtro afecta solo a este bloque.</p>${localTabs('histRecordsScope',recordsScope)}<div class="divider"></div>${recordsHtml}</div><div class="card"><div class="matchTop"><b>🔥 Rachas históricas</b>${scopeBadge(streakScope)}</div><p class="subtle">Este filtro afecta solo a las rachas.</p>${localTabs('histStreakScope',streakScope)}<div class="divider"></div>${streakHtml}</div><div class="card"><b>⚔️ Clásicos</b><p class="subtle">Cruces 1vs1 más repetidos. Bloque general.</p><div class="divider"></div>${classicsHtml}</div><div class="card"><b>🎖️ Logros</b><p class="subtle">Hitos automáticos del historial. Bloque general.</p><div class="divider"></div>${achievementsHtml}</div><div class="card"><div class="matchTop"><b>🤝 Equipos 2vs2</b>${scopeBadge(fameScope)}</div><p class="subtle">Ranking histórico de parejas campeonas según el filtro del Salón de la Fama.</p><div class="divider"></div><div class="tableHead"><span>#</span><span>Equipo</span><span>Tít.</span><span></span><span></span><span></span></div>${teamRows}</div><div class="card"><div class="matchTop"><b>📜 Historial de Campeones</b>${scopeBadge(champsScope)}</div><p class="subtle">Torneos cerrados, campeón y subcampeón.</p>${localTabs('histChampsScope',champsScope)}<div class="divider"></div>${championRows}</div><div class="card"><div class="matchTop"><b>🕹️ Resultados recientes</b>${scopeBadge(recentScope)}</div>${localTabs('histRecentScope',recentScope)}<div class="divider"></div>${recentRows}</div>`
-}
-
-function togglePlayer(p){ui.selected=ui.selected.includes(p)?ui.selected.filter(x=>x!==p):[...ui.selected,p];ui.preview=null;render()}
-function preview(){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  if(ui.mode==='2v2'&&sel.length<4){alert('Para 2vs2 elegí al menos 4 jugadores.');return}
-  if(ui.mode!=='2v2'){startRandomTeamBuild();return}
-  $("modalBody").innerHTML=`<h3 style="margin:0 0 8px">⚽ Armar equipos</h3><p class="subtle">Elegí cómo querés definir las parejas de este torneo.</p><div class="grid2" style="margin-top:14px"><button class="btnDark" onclick="startRandomTeamBuild()">🎲 Sortear</button><button class="btnLime" onclick="openManualTeamBuilder()">👥 Manual</button></div><div class="warn" style="margin-top:12px">Las parejas que confirmes quedan fijas y después el fixture usa exactamente esos mismos equipos.</div>`;
-  $("modal").classList.add('active');
-}
-function startRandomTeamBuild(){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  if(ui.mode==='2v2'&&sel.length<4){alert('Para 2vs2 elegí al menos 4 jugadores.');return}
-  // Se sortean las unidades una sola vez y se guardan en ui.preview.
-  // Al crear el torneo, se reutilizan exactamente estas mismas duplas/jugadores.
-  const fixedUnits=unitsFor(ui.mode,sel);
-  let shuffled=shuffle(sel);
-  $("modalBody").innerHTML=`<h3 style="margin:0 0 8px">🎲 Sorteando equipos...</h3><div class="field" style="background:linear-gradient(135deg,#020617,#064e3b)"><div class="heroIcon">🎲</div>${sortPhotos(shuffled)}</div><p class="subtle" style="margin-top:12px">Un momento de suspenso antes de revelar el armado.</p>`;
-  $("modal").classList.add('active');
-  setTimeout(()=>{
-    $("modalBody").innerHTML=`<h3 style="margin:0 0 8px">⚽ Armando los equipos...</h3><div class="field" style="background:linear-gradient(135deg,#020617,#064e3b)"><div class="heroIcon">⚽</div><div class="sortPhotos">${sel.map(p=>`<div style="text-align:center">${playerPhoto(p,'photoBig')}<div class="whiteMuted" style="margin-top:4px">${esc(p)} + ?</div></div>`).join('')}</div></div><p class="subtle" style="margin-top:12px">Preparando la vista previa del sorteo.</p>`;
-  },1000);
-  setTimeout(()=>{
-    ui.preview={units:cloneUnits(fixedUnits),mode:ui.mode,selectedSignature:selectedSignature(sel),buildMethod:'Sorteo'};
-    closeModal();
-    render();
-  },2500)
-}
-function manualTeamOptions(selectedValue){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  return sel.map(p=>`<option value="${esc(p)}" ${p===selectedValue?'selected':''}>${esc(p)}</option>`).join('');
-}
-function openManualTeamBuilder(){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  if(sel.length<4){alert('Para 2vs2 manual elegí al menos 4 jugadores.');return}
-  if(sel.length%2!==0){alert('Para armar parejas manualmente, elegí una cantidad par de jugadores.');return}
-  let rows=[];
-  for(let i=0;i<sel.length;i+=2){
-    rows.push(`<div class="match"><div class="matchTop"><b>Equipo ${(i/2)+1}</b><span class="tag">Manual</span></div><div class="grid2"><select id="manualA_${i/2}">${manualTeamOptions(sel[i])}</select><select id="manualB_${i/2}">${manualTeamOptions(sel[i+1])}</select></div></div>`);
-  }
-  $("modalBody").innerHTML=`<h3 style="margin:0 0 8px">👥 Elegir parejas</h3><p class="subtle">Seleccioná dos jugadores por equipo. No se pueden repetir jugadores.</p><div class="divider"></div>${rows.join('')}<div class="grid2" style="margin-top:12px"><button class="choice" onclick="preview()">Volver</button><button class="btn" onclick="confirmManualTeams()">✅ Confirmar equipos</button></div>`;
-  $("modal").classList.add('active');
-}
-function confirmManualTeams(){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  let teams=[];
-  let used=[];
-  for(let i=0;i<sel.length/2;i++){
-    let a=$("manualA_"+i)?.value;
-    let b=$("manualB_"+i)?.value;
-    if(!a||!b){alert('Completá todos los equipos.');return}
-    if(a===b){alert('Un equipo no puede tener dos veces al mismo jugador.');return}
-    teams.push([a,b]);
-    used.push(a,b);
-  }
-  let duplicates=used.filter((p,i)=>used.indexOf(p)!==i);
-  if(duplicates.length){alert('Hay jugadores repetidos. Revisá las parejas antes de confirmar.');return}
-  let missing=sel.filter(p=>!used.includes(p));
-  if(missing.length){alert('Falta asignar: '+missing.join(', '));return}
-  ui.preview={units:cloneUnits(teams),mode:'2v2',selectedSignature:selectedSignature(sel),buildMethod:'Manual'};
-  closeModal();
-  render();
-}
-function startTournamentBuild(){let sel=ui.selected.length>=2?ui.selected:PLAYERS;if(ui.mode==='2v2'&&sel.length<4){alert('Para 2vs2 elegí al menos 4 jugadores.');return}$("modalBody").innerHTML=`<h3 style="margin:0 0 8px">Armando torneo...</h3><div class="field" style="background:linear-gradient(135deg,#020617,#064e3b)"><div class="heroIcon">🎲</div><p class="whiteMuted">Sorteando cruces, acomodando descansos y preparando el fixture.</p></div><p class="subtle" style="margin-top:12px">Un segundo de suspenso antes de conocer el calendario.</p>`;$("modal").classList.add('active');setTimeout(()=>createTournament(),1450)}
-function createTournament(){
-  let sel=ui.selected.length>=2?ui.selected:PLAYERS;
-  if(ui.mode==='2v2'&&sel.length<4){alert('Para 2vs2 elegí al menos 4 jugadores.');return}
-  let mode=ui.legMode||ui.copaLegs||'Ida';
-  const sig=selectedSignature(sel);
-  const hasValidPreview=ui.preview&&ui.preview.mode===ui.mode&&ui.preview.selectedSignature===sig&&Array.isArray(ui.preview.units)&&ui.preview.units.length;
-  const fixedUnits=hasValidPreview?cloneUnits(ui.preview.units):unitsFor(ui.mode,sel);
-  let t={
-    id:Date.now(),
-    name:(ui.newName||`${ui.mode} ${ui.format}`).trim(),
-    mode:ui.mode,
-    format:ui.format,
-    legMode:mode,
-    copaLegs:mode,
-    players:sel,
-    teams:cloneUnits(fixedUnits),
-    status:'En curso',
-    locked:false,
-    createdAt:todayISO()
-  };
-  let ms=generateMatches(t);
-  state.tournaments.unshift(t);
-  state.matches.unshift(...ms);
-  ui.selectedTournament=t.id;
-  save();
-  closeModal();
-  go('fixture')
-}
-function applyTournamentDeletion(baseState,idStr){
-  const safe=normalizeStateShape(baseState);
-  const deleted=[...new Set([...(safe.deletedTournamentIds||[]).map(String), String(idStr)])];
-  const deletedSet=new Set(deleted);
-  return {
-    tournaments:(safe.tournaments||[]).filter(x=>!deletedSet.has(String(x.id))),
-    matches:(safe.matches||[]).filter(m=>!deletedSet.has(String(m.tournamentId))),
-    deletedTournamentIds:deleted
-  };
-}
-async function deleteTournament(id){
-  const idStr=String(id);
-  const t=state.tournaments.find(x=>String(x.id)===idStr);
-  if(!t)return;
-  if(!confirm(`¿Eliminar "${t.name}"? Se borran también sus partidos y resultados.`))return;
-  if(!confirm(`Confirmación final: esta acción no se puede deshacer. ¿Seguro que querés eliminar "${t.name}"?`))return;
-
-  pendingDeletedTournamentIds.add(idStr);
-  state=applyTournamentDeletion(state,idStr);
-  if(String(ui.selectedTournament)===idStr) ui.selectedTournament=state.tournaments[0]?.id||null;
-  localStorage.setItem(KEY,JSON.stringify(state));
-  render();
-
-  if(!db){
-    alert('Torneo eliminado en este dispositivo. Firebase no está conectado, por eso no se pudo sincronizar online.');
-    return;
-  }
-
-  try{
-    syncingFromCloud=true;
-    await db.ref(DB_PATH).transaction(current=>{
-      const currentState=normalizeCloudState(current)||state;
-      return applyTournamentDeletion(currentState,idStr);
-    });
-  }catch(err){
-    console.warn("No se pudo borrar en Firebase", err);
-    alert("No se pudo borrar en Firebase. Revisá las reglas de escritura de Realtime Database.");
-  }finally{
-    syncingFromCloud=false;
-    setTimeout(()=>pendingDeletedTournamentIds.delete(idStr),2500);
-  }
-}
-function openScore(id){
-  let m=findMatch(id);if(!m)return;
-  let t=state.tournaments.find(x=>x.id===m.tournamentId);
-  if(t?.locked){alert('Este torneo ya fue finalizado y no se puede editar.');return}
-  if(!canEditMatch(m)){alert('Este partido todavía no está habilitado. Primero deben definirse los ganadores anteriores.');return}
-  let editing=m.played&&!m.bye;
-  let isCopa=m.format==='Copa';
-  let idaVuelta=isCopa&&matchLegMode(m)==='Ida y vuelta';
-  let agg=aggregateScore(m);
-  let showPens=isCopa&&(idaVuelta
-    ? (String(m.scoreA)!==''&&String(m.scoreB)!==''&&String(m.scoreA2)!==''&&String(m.scoreB2)!==''&&agg.a===agg.b)
-    : (String(m.scoreA)!==''&&String(m.scoreB)!==''&&Number(m.scoreA)===Number(m.scoreB))
-  );
-  let legsHtml=idaVuelta?`
-    <div class="label" style="margin-top:12px">Partido de ida</div>
-    <div class="grid2"><input id="sa" type="number" placeholder="${esc(teamName(m.teamA))}" value="${m.scoreA}" oninput="togglePens(${m.id})"><input id="sb" type="number" placeholder="${esc(teamName(m.teamB))}" value="${m.scoreB}" oninput="togglePens(${m.id})"></div>
-    <div class="label" style="margin-top:12px">Partido de vuelta</div>
-    <div class="grid2"><input id="sa2" type="number" placeholder="${esc(teamName(m.teamB))}" value="${m.scoreA2??''}" oninput="togglePens(${m.id})"><input id="sb2" type="number" placeholder="${esc(teamName(m.teamA))}" value="${m.scoreB2??''}" oninput="togglePens(${m.id})"></div>
-    <p class="subtle" style="margin-top:8px">En la vuelta, el primer campo es para ${esc(teamName(m.teamB))} y el segundo para ${esc(teamName(m.teamA))}. La app calcula el global.</p>`:
-    `<div class="grid2" style="margin-top:12px"><input id="sa" type="number" placeholder="${esc(teamName(m.teamA))}" value="${m.scoreA}" oninput="togglePens(${m.id})"><input id="sb" type="number" placeholder="${esc(teamName(m.teamB))}" value="${m.scoreB}" oninput="togglePens(${m.id})"></div>`;
-  let help=isCopa?(idaVuelta
-    ? '<div class="warn">Copa ida y vuelta: gana quien tenga mejor resultado global. Si el global queda empatado, cargá penales para definir quién avanza.</div>'
-    : '<div class="warn">En Copa puede haber empate en goles, pero tenés que cargar penales para definir quién avanza. Si corregís un resultado, se limpian las instancias que dependían de ese partido.</div>') : '';
-  $("modalBody").innerHTML=`<h3 style="margin:0 0 12px">${editing?'Corregir resultado':'Cargar resultado'}</h3><div class="match"><p class="subtle">${esc(m.tournamentName)} · ${esc(m.stage||m.round)}${idaVuelta?' · Ida y vuelta':''}</p><b>${esc(teamName(m.teamA))} vs ${esc(teamName(m.teamB))}</b>${editing?`<div style="font-size:20px;font-weight:1000;margin-top:8px">${scoreText(m)}</div>`:''}</div>${help}${editing?'<div class="editNote" style="margin-top:10px">Modificá los goles y guardá. Esto reemplaza el resultado anterior.</div>':''}${legsHtml}${isCopa?`<div id="pensBox" style="display:${showPens?'block':'none'};margin-top:12px"><div class="label">Penales</div><div class="grid2"><input id="pa" type="number" placeholder="Penales ${esc(teamName(m.teamA))}" value="${m.penA??''}"><input id="pb" type="number" placeholder="Penales ${esc(teamName(m.teamB))}" value="${m.penB??''}"></div><p class="subtle" style="margin-top:8px">Solo se usan si el partido o el global terminó empatado.</p></div>`:''}<div class="grid2" style="margin-top:12px"><button class="choice" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveScore(${m.id})">Guardar</button></div>`;
-  $("modal").classList.add('active')
-}
-function openScoreLeg(id,leg){
-  let m=findMatch(id);if(!m)return;
-  let t=state.tournaments.find(x=>x.id===m.tournamentId);
-  if(t?.locked){alert('Este torneo ya fue finalizado y no se puede editar.');return}
-  if(!cupTwoLegged(m)||!canEditMatch(m)){alert('Este partido todavía no está habilitado. Primero deben definirse los ganadores anteriores.');return}
-  if(leg==='vuelta'&&!cupLegDone(m,'ida')){alert('Primero cargá el partido de ida.');return}
-  let teams=cupLegTeams(m,leg);
-  let isVuelta=leg==='vuelta';
-  let hVal=isVuelta?(m.scoreA2??''):m.scoreA;
-  let aVal=isVuelta?(m.scoreB2??''):m.scoreB;
-  let label=isVuelta?'Partido de vuelta':'Partido de ida';
-  let agg=aggregateScore(m);
-  let showPens=isVuelta&&cupLegDone(m,'ida')&&scoreValue(hVal)&&scoreValue(aVal)&&agg.a===agg.b;
-  $("modalBody").innerHTML=`<h3 style="margin:0 0 12px">${cupLegDone(m,leg)?'Corregir':'Cargar'} ${label.toLowerCase()}</h3><div class="match"><p class="subtle">${esc(m.tournamentName)} · ${esc(m.stage||m.round)} · ${esc(m.code)} · ${label}</p><b>${esc(teamName(teams.home))} vs ${esc(teamName(teams.away))}</b>${cupLegDone(m,leg)?`<div style="font-size:20px;font-weight:1000;margin-top:8px">${cupLegScore(m,leg)}</div>`:''}</div><div class="warn" style="margin-top:10px">Copa ida y vuelta: se carga cada partido por separado. La vuelta se habilita después de cargar la ida. Si el global queda empatado, cargá penales para definir quién avanza.</div><div class="grid2" style="margin-top:12px"><input id="legHome" type="number" placeholder="${esc(teamName(teams.home))}" value="${hVal}" oninput="togglePensLeg(${m.id},'${leg}')"><input id="legAway" type="number" placeholder="${esc(teamName(teams.away))}" value="${aVal}" oninput="togglePensLeg(${m.id},'${leg}')"></div>${isVuelta?`<div id="pensBox" style="display:${showPens?'block':'none'};margin-top:12px"><div class="label">Penales</div><div class="grid2"><input id="pa" type="number" placeholder="Penales ${esc(teamName(m.teamA))}" value="${m.penA??''}"><input id="pb" type="number" placeholder="Penales ${esc(teamName(m.teamB))}" value="${m.penB??''}"></div><p class="subtle" style="margin-top:8px">Los penales se cargan según la llave original: ${esc(teamName(m.teamA))} vs ${esc(teamName(m.teamB))}.</p></div>`:''}<div class="grid2" style="margin-top:12px"><button class="choice" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveScoreLeg(${m.id},'${leg}')">Guardar</button></div>`;
-  $("modal").classList.add('active');
-}
-function togglePensLeg(id,leg){
-  let m=findMatch(id); if(!m||!cupTwoLegged(m)||leg!=='vuelta')return;
-  let box=$("pensBox"); if(!box)return;
-  let home=$("legHome")?.value, away=$("legAway")?.value;
-  if(home===''||away===''||!cupLegDone(m,'ida')){box.style.display='none';return}
-  let aggA=Number(m.scoreA||0)+Number(away||0);
-  let aggB=Number(m.scoreB||0)+Number(home||0);
-  box.style.display=(aggA===aggB)?'block':'none';
-}
-function saveScoreLeg(id,leg){
-  let m=findMatch(id); if(!m||!cupTwoLegged(m))return;
-  let t=state.tournaments.find(x=>x.id===m.tournamentId);
-  if(t?.locked){alert('Este torneo está cerrado.');return}
-  let home=$("legHome")?.value, away=$("legAway")?.value;
-  if(home===''||away==='')return;
-  let wasPlayed=m.played;
-  if(cupLegDone(m,leg)&&!confirm('¿Seguro que querés corregir este resultado? Si depende de una llave posterior, se limpiará lo que corresponda.'))return;
-  if(wasPlayed)clearDownstream(m);
-  if(leg==='ida'){
-    m.scoreA=+home; m.scoreB=+away;
-    // Al corregir la ida, la vuelta y la definición vuelven a quedar abiertas.
-    if(wasPlayed){m.scoreA2='';m.scoreB2='';m.penA='';m.penB='';}
-  }else{
-    if(!cupLegDone(m,'ida')){alert('Primero cargá el partido de ida.');return}
-    m.scoreA2=+home; m.scoreB2=+away;
-  }
-  let both=cupLegDone(m,'ida')&&cupLegDone(m,'vuelta');
-  m.played=false;
-  if(both){
-    let agg=aggregateScore(m);
-    if(agg.a===agg.b){
-      let pa=$("pa")?.value??'', pb=$("pb")?.value??'';
-      if(pa===''||pb===''){save();closeModal();render();alert('El global quedó empatado. Cargá los penales en el partido de vuelta para definir quién avanza.');return}
-      if(Number(pa)===Number(pb)){alert('Los penales no pueden quedar empatados. Tiene que haber un ganador.');return}
-      m.penA=+pa;m.penB=+pb;
-    }else{m.penA='';m.penB='';}
-    m.played=true;
-    m.date=new Date().toISOString().slice(0,10);
-    propagateWinner(m,winnerOf(m));
-  }
-  if(t){delete t.champion;t.status='En curso';}
-  save();closeModal();render();
-}
-
-function togglePens(id){
-  let m=findMatch(id); if(!m||m.format!=='Copa')return;
-  let box=$("pensBox"); if(!box)return;
-  let idaVuelta=matchLegMode(m)==='Ida y vuelta';
-  let a=$("sa")?.value, b=$("sb")?.value, a2=$("sa2")?.value, b2=$("sb2")?.value;
-  if(idaVuelta){
-    let ready=a!==''&&b!==''&&a2!==''&&b2!=='';
-    let ga=Number(a||0)+Number(b2||0), gb=Number(b||0)+Number(a2||0);
-    box.style.display=(ready&&ga===gb)?'block':'none';
-  }else{
-    box.style.display=(a!==''&&b!==''&&Number(a)===Number(b))?'block':'none';
-  }
-}
-function saveScore(id){
-  let m=findMatch(id),a=$("sa")?.value,b=$("sb")?.value;
-  if(!m||a===''||b==='')return;
-  let t=state.tournaments.find(x=>x.id===m.tournamentId);
-  if(t?.locked){alert('Este torneo está cerrado.');return}
-  let idaVuelta=m.format==='Copa'&&matchLegMode(m)==='Ida y vuelta';
-  let a2=$("sa2")?.value??"", b2=$("sb2")?.value??"";
-  if(idaVuelta&&(a2===''||b2==='')){alert('Cargá también el resultado de vuelta.');return}
-  let aggA=Number(a)+Number(idaVuelta?b2:0), aggB=Number(b)+Number(idaVuelta?a2:0);
-  let isDraw=idaVuelta?aggA===aggB:Number(a)===Number(b);
-  let pa=$("pa")?.value??"", pb=$("pb")?.value??"";
-  if(m.format==='Copa'&&isDraw){
-    if(pa===''||pb===''){alert('La llave terminó empatada. Cargá los penales para definir quién avanza.');return}
-    if(Number(pa)===Number(pb)){alert('Los penales no pueden quedar empatados. Tiene que haber un ganador.');return}
-  }
-  if(m.played&&!confirm('¿Seguro que querés corregir este resultado? Esto reemplaza el resultado anterior.'))return;
-  if(m.played&&m.format==='Copa')clearDownstream(m);
-  m.scoreA=+a;m.scoreB=+b;
-  m.scoreA2=idaVuelta?+a2:"";m.scoreB2=idaVuelta?+b2:"";
-  if(m.format==='Copa'&&isDraw){m.penA=+pa;m.penB=+pb;}else{m.penA="";m.penB="";}
-  m.played=true;m.date=new Date().toISOString().slice(0,10);
-  if(m.format==='Copa')propagateWinner(m,winnerOf(m));
-  if(t&&t.format==='Liga'&&isTournamentComplete(t))t.status='Completo';
-  save();closeModal();render()
-}
-
-
-function normalizeCloudState(data){
-  if(!data) return null;
-  return normalizeStateShape(data);
-}
-function initFirebase(){
-  try{
-    if(!window.firebase || !firebase?.apps){console.warn("Firebase no disponible");return;}
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    db=firebase.database();
-    db.ref(DB_PATH).on('value', snap=>{
-      let cloudState=normalizeCloudState(snap.val());
-      if(cloudState){
-        pendingDeletedTournamentIds.forEach(idStr=>{ cloudState=applyTournamentDeletion(cloudState,idStr); });
-        cloudState=normalizeStateShape(cloudState);
-        syncingFromCloud=true;
-        state=cloudState;
-        localStorage.setItem(KEY,JSON.stringify(state));
-        if(ui.selectedTournament && !state.tournaments.some(t=>String(t.id)==String(ui.selectedTournament))){
-          ui.selectedTournament=state.tournaments[0]?.id||null;
-        }
-        if(!ui.selectedTournament) ui.selectedTournament=state.tournaments[0]?.id||null;
-        render();
-        syncingFromCloud=false;
-      }else{
-        save();
-      }
-    }, err=>console.warn("No se pudo leer Firebase", err));
-  }catch(err){
-    console.warn("Firebase quedó desactivado", err);
-  }
-}
-
-function closeModal(){$("modal").classList.remove('active')}$("modal").addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-function go(tab){ui.tab=tab;render()}document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));// Auth-gated startup
+function render(){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(ui.tab).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 initApp();
 
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 
-/* ===== AUTH ===== */
-function showAuthScreen(errorMsg) {
-  document.body.innerHTML = `
-  <div style="min-height:100vh;background:linear-gradient(135deg,#052e1a 0%,#16a34a 100%);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,system-ui,sans-serif;">
-    <div style="background:white;border-radius:28px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,0.35);">
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="font-size:52px;margin-bottom:8px;">⚽</div>
-        <h1 style="margin:0 0 4px;color:#052e1a;font-size:26px;font-weight:900;letter-spacing:-0.5px;">GoalMates</h1>
-        <p style="color:#64748b;margin:0;font-size:13px;">Torneos con tus amigos</p>
-      </div>
-      <div id="auth-tabs" style="display:flex;background:#f0fdf4;border-radius:16px;padding:4px;margin-bottom:24px;">
-        <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:10px;border:none;border-radius:12px;background:white;color:#052e1a;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Ingresar</button>
-        <button id="tab-register" onclick="switchAuthTab('register')" style="flex:1;padding:10px;border:none;border-radius:12px;background:transparent;color:#64748b;font-weight:700;font-size:14px;cursor:pointer;">Registrarse</button>
-      </div>
-      ${errorMsg ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 14px;margin-bottom:16px;color:#dc2626;font-size:13px;font-weight:600;">${errorMsg}</div>` : ''}
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <input id="auth-email" type="email" placeholder="Tu email" autocomplete="email"
-          style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
-        <input id="auth-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
-          style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
-        <div id="auth-pass2-wrap" style="display:none;">
-          <input id="auth-pass2" type="password" placeholder="Repetir contraseña" autocomplete="new-password"
-            style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <button id="auth-btn" onclick="doAuth()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;margin-top:4px;">Ingresar</button>
-      </div>
-      <div style="text-align:center;margin-top:16px;">
-        <button onclick="doForgotPassword()" style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;text-decoration:underline;">¿Olvidaste tu contraseña?</button>
-      </div>
+
+/* ══════════ GoalMates Auth & Setup ══════════ */
+
+function gmShow(html, subtitle) {
+  document.getElementById('gm-subtitle').textContent = subtitle || '';
+  document.getElementById('gm-content').innerHTML = html;
+  document.getElementById('gm-overlay').style.display = 'flex';
+}
+function gmHide() {
+  document.getElementById('gm-overlay').style.display = 'none';
+}
+
+function showAuthScreen(errMsg) {
+  gmShow(`
+    <div id="auth-tabs" style="display:flex;background:#f0fdf4;border-radius:16px;padding:4px;margin-bottom:20px;">
+      <button id="tab-login" onclick="switchTab('login')" style="flex:1;padding:10px;border:none;border-radius:12px;background:white;color:#052e1a;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Ingresar</button>
+      <button id="tab-reg" onclick="switchTab('register')" style="flex:1;padding:10px;border:none;border-radius:12px;background:transparent;color:#64748b;font-weight:700;font-size:14px;cursor:pointer;">Registrarse</button>
     </div>
-  </div>`;
-  // allow enter key
-  document.getElementById('auth-pass').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
-  const p2 = document.getElementById('auth-pass2');
-  if(p2) p2.addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
+    ${errMsg ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 14px;margin-bottom:14px;color:#dc2626;font-size:13px;font-weight:600;">${errMsg}</div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input id="auth-email" type="email" placeholder="Tu email" autocomplete="email"
+        style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
+      <input id="auth-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
+        style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
+      <div id="pass2-wrap" style="display:none;">
+        <input id="auth-pass2" type="password" placeholder="Repetir contraseña"
+          style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;">
+      </div>
+      <button id="auth-btn" onclick="doAuth()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;margin-top:4px;">Ingresar</button>
+    </div>
+    <div style="text-align:center;margin-top:14px;">
+      <button onclick="doForgot()" style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;text-decoration:underline;">¿Olvidaste tu contraseña?</button>
+    </div>
+  `, 'Tu cuenta personal de torneos');
+  setTimeout(() => {
+    const ep = document.getElementById('auth-pass');
+    if(ep) ep.addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
+  }, 50);
 }
 
 let _authMode = 'login';
-function switchAuthTab(mode) {
+function switchTab(mode) {
   _authMode = mode;
   const isReg = mode === 'register';
-  document.getElementById('tab-login').style.cssText = `flex:1;padding:10px;border:none;border-radius:12px;background:${isReg?'transparent':'white'};color:${isReg?'#64748b':'#052e1a'};font-weight:${isReg?'700':'800'};font-size:14px;cursor:pointer;${isReg?'':'box-shadow:0 2px 8px rgba(0,0,0,0.1);'}`;
-  document.getElementById('tab-register').style.cssText = `flex:1;padding:10px;border:none;border-radius:12px;background:${isReg?'white':'transparent'};color:${isReg?'#052e1a':'#64748b'};font-weight:${isReg?'800':'700'};font-size:14px;cursor:pointer;${isReg?'box-shadow:0 2px 8px rgba(0,0,0,0.1);':''}`;
-  document.getElementById('auth-pass2-wrap').style.display = isReg ? 'block' : 'none';
-  document.getElementById('auth-btn').textContent = isReg ? 'Crear cuenta' : 'Ingresar';
-  document.getElementById('auth-email').value = '';
-  document.getElementById('auth-pass').value = '';
+  const tl = document.getElementById('tab-login');
+  const tr = document.getElementById('tab-reg');
+  const pw = document.getElementById('pass2-wrap');
+  const btn = document.getElementById('auth-btn');
+  if(tl) { tl.style.background = isReg ? 'transparent' : 'white'; tl.style.color = isReg ? '#64748b' : '#052e1a'; tl.style.boxShadow = isReg ? 'none' : '0 2px 8px rgba(0,0,0,0.1)'; }
+  if(tr) { tr.style.background = isReg ? 'white' : 'transparent'; tr.style.color = isReg ? '#052e1a' : '#64748b'; tr.style.boxShadow = isReg ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'; }
+  if(pw) pw.style.display = isReg ? 'block' : 'none';
+  if(btn) btn.textContent = isReg ? 'Crear cuenta' : 'Ingresar';
 }
 
 function doAuth() {
   const email = (document.getElementById('auth-email')?.value||'').trim();
   const pass = document.getElementById('auth-pass')?.value||'';
-  if(!email || !pass) { showAuthScreen('Completá email y contraseña.'); return; }
+  if(!email||!pass) { showAuthScreen('Completá email y contraseña.'); return; }
   const btn = document.getElementById('auth-btn');
   if(btn) { btn.textContent = '...'; btn.disabled = true; }
   if(_authMode === 'register') {
     const pass2 = document.getElementById('auth-pass2')?.value||'';
     if(pass !== pass2) { showAuthScreen('Las contraseñas no coinciden.'); return; }
     if(pass.length < 6) { showAuthScreen('La contraseña debe tener al menos 6 caracteres.'); return; }
-    firebase.auth().createUserWithEmailAndPassword(email, pass)
-      .catch(err => showAuthScreen(authError(err)));
+    firebase.auth().createUserWithEmailAndPassword(email, pass).catch(err => showAuthScreen(authErr(err)));
   } else {
-    firebase.auth().signInWithEmailAndPassword(email, pass)
-      .catch(err => showAuthScreen(authError(err)));
+    firebase.auth().signInWithEmailAndPassword(email, pass).catch(err => showAuthScreen(authErr(err)));
   }
 }
 
-function doForgotPassword() {
+function doForgot() {
   const email = (document.getElementById('auth-email')?.value||'').trim();
   if(!email) { showAuthScreen('Ingresá tu email primero.'); return; }
   firebase.auth().sendPasswordResetEmail(email)
     .then(() => showAuthScreen('Te enviamos un email para recuperar tu contraseña.'))
-    .catch(err => showAuthScreen(authError(err)));
+    .catch(err => showAuthScreen(authErr(err)));
 }
 
-function authError(err) {
+function authErr(err) {
   const map = {
     'auth/user-not-found': 'No existe una cuenta con ese email.',
     'auth/wrong-password': 'Contraseña incorrecta.',
     'auth/invalid-email': 'Email inválido.',
     'auth/email-already-in-use': 'Ya existe una cuenta con ese email.',
-    'auth/weak-password': 'La contraseña es muy débil (mínimo 6 caracteres).',
+    'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
     'auth/too-many-requests': 'Demasiados intentos. Esperá unos minutos.',
     'auth/invalid-credential': 'Email o contraseña incorrectos.',
   };
-  return map[err.code] || 'Error: ' + err.message;
+  return map[err.code] || ('Error: ' + err.message);
 }
 
-function initApp() {
-  // Initialize Firebase first (without DB listener yet)
-  try {
-    if(!window.firebase || !firebase?.apps) { console.warn("Firebase no disponible"); bootWithoutAuth(); return; }
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    // Listen for auth state
-    firebase.auth().onAuthStateChanged(user => {
-      if(user) {
-        CURRENT_USER = user;
-        DB_PATH = "torneosApp/users/" + user.uid + "/data";
-        // Load group config for this user from localStorage (keyed by uid)
-        GROUP_CONFIG = JSON.parse(localStorage.getItem('goalmates_group_' + user.uid) || 'null');
-        if(GROUP_CONFIG) {
-          PLAYERS.length = 0;
-          GROUP_CONFIG.players.forEach(p => PLAYERS.push(p));
-          // Update ui defaults
-          ui.selected = [...PLAYERS];
-          if(!ui.hA) ui.hA = PLAYERS[0]||'';
-          if(!ui.hB) ui.hB = PLAYERS[1]||'';
-          // Restore app HTML and boot
-          bootApp();
-        } else {
-          // Authenticated but no group yet — show setup
-          showSetupScreen();
-        }
-      } else {
-        // Not logged in
-        showAuthScreen('');
-      }
-    });
-  } catch(err) {
-    console.warn("Firebase error:", err);
-    bootWithoutAuth();
-  }
+function showSetupScreen() {
+  gmShow(`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Nombre del grupo</label>
+        <input id="setup-name" type="text" placeholder="Ej: Los Cracks del Martes" maxlength="40"
+          style="width:100%;border:2px solid #d1fae5;border-radius:14px;padding:12px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;box-sizing:border-box;outline:none;">
+      </div>
+      <div>
+        <label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Jugadores <span style="color:#64748b;font-weight:400;">(mín. 2, máx. 12)</span></label>
+        <div id="setup-players" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
+        <button onclick="addPlayer()" style="width:100%;border:2px dashed #d1fae5;border-radius:12px;padding:9px;background:none;color:#16a34a;font-weight:700;font-size:14px;cursor:pointer;">+ Agregar jugador</button>
+      </div>
+      <button onclick="createGroup()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;">Crear grupo ⚽</button>
+    </div>
+  `, 'Configurá tu grupo');
+  for(let i=0;i<4;i++) addPlayer();
 }
 
-function bootApp() {
-  // Restore the full app HTML if it was replaced by auth/setup screen
-  if(!document.querySelector('.app')) {
-    location.reload();
-    return;
-  }
-  // Update header title
-  const titleEl = document.getElementById('app-title');
-  if(titleEl && GROUP_CONFIG) titleEl.textContent = GROUP_CONFIG.groupName || 'GoalMates';
-  initFirebase();
-  render();
+function addPlayer() {
+  const list = document.getElementById('setup-players');
+  if(!list) return;
+  const count = list.querySelectorAll('input').length;
+  if(count >= 12) return;
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;gap:6px;align-items:center;';
+  d.innerHTML = `<input type="text" placeholder="Jugador ${count+1}" maxlength="20"
+    style="flex:1;border:2px solid #d1fae5;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;">
+    <button onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:10px;padding:7px 10px;color:#dc2626;cursor:pointer;font-size:14px;">✕</button>`;
+  list.appendChild(d);
 }
 
-function bootWithoutAuth() {
-  GROUP_CONFIG = JSON.parse(localStorage.getItem('goalmates_group_config') || 'null');
-  if(GROUP_CONFIG) {
-    PLAYERS.length = 0;
-    GROUP_CONFIG.players.forEach(p => PLAYERS.push(p));
-    ui.selected = [...PLAYERS];
-    if(!ui.hA) ui.hA = PLAYERS[0]||'';
-    if(!ui.hB) ui.hB = PLAYERS[1]||'';
-    bootApp();
-  } else {
-    showSetupScreen();
-  }
+function createGroup() {
+  const groupName = (document.getElementById('setup-name')?.value||'').trim() || 'Mi Grupo';
+  const players = Array.from(document.querySelectorAll('#setup-players input')).map(i=>i.value.trim()).filter(Boolean);
+  if(players.length < 2) { alert('Agregá al menos 2 jugadores.'); return; }
+  const groupId = 'g_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+  const config = {groupId, groupName, players, createdAt: new Date().toISOString()};
+  const key = CURRENT_USER ? 'goalmates_group_' + CURRENT_USER.uid : 'goalmates_group_config';
+  localStorage.setItem(key, JSON.stringify(config));
+  location.reload();
 }
 
 function doSignOut() {
   if(!confirm('¿Cerrar sesión?')) return;
-  firebase.auth().signOut().then(() => { location.reload(); });
-}
-
-/* ===== SETUP / ONBOARDING ===== */
-/* ===== SETUP / ONBOARDING ===== */
-function showSetupScreen() {
-  document.body.innerHTML = `
-  <div style="min-height:100vh;background:linear-gradient(135deg,#052e1a,#16a34a);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,system-ui,sans-serif;">
-    <div style="background:white;border-radius:28px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-      <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-size:48px;">⚽</div>
-        <h1 style="margin:8px 0 4px;color:#052e1a;font-size:24px;font-weight:900;">GoalMates</h1>
-        <p style="color:#64748b;margin:0;font-size:14px;">Configurá tu grupo para empezar</p>
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Nombre del grupo</label>
-        <input id="setup-groupname" type="text" placeholder="Ej: Los Cracks del Martes" maxlength="40"
-          style="width:100%;border:2px solid #d1fae5;border-radius:14px;padding:12px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;box-sizing:border-box;outline:none;">
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Jugadores <span style="color:#64748b;font-weight:400;">(mín. 2, máx. 12)</span></label>
-        <div id="setup-players-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
-        <button onclick="addPlayerInput()" style="width:100%;border:2px dashed #d1fae5;border-radius:14px;padding:10px;background:none;color:#16a34a;font-weight:700;font-size:14px;cursor:pointer;">+ Agregar jugador</button>
-      </div>
-      <button onclick="createGroup()" style="width:100%;background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:18px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;margin-top:8px;">Crear grupo ⚽</button>
-    </div>
-  </div>`;
-  for(let i=0;i<4;i++) addPlayerInput();
-}
-
-function addPlayerInput() {
-  const list = document.getElementById('setup-players-list');
-  if (!list) return;
-  const inputs = list.querySelectorAll('input');
-  if (inputs.length >= 12) return;
-  const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:8px;align-items:center;';
-  div.innerHTML = `<input type="text" placeholder="Nombre jugador ${inputs.length+1}" maxlength="20"
-    style="flex:1;border:2px solid #d1fae5;border-radius:12px;padding:10px;font-size:14px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;">
-    <button onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:10px;padding:8px 10px;color:#dc2626;cursor:pointer;font-size:16px;">✕</button>`;
-  list.appendChild(div);
-}
-
-function createGroup() {
-  const groupName = (document.getElementById('setup-groupname')?.value||'').trim() || 'Mi Grupo';
-  const inputs = document.querySelectorAll('#setup-players-list input');
-  const players = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
-  if (players.length < 2) { alert('Agregá al menos 2 jugadores'); return; }
-  const groupId = 'g_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
-  const config = {groupId, groupName, players, createdAt: new Date().toISOString()};
-  if(window.firebase && firebase.auth && firebase.auth().currentUser) {
-    localStorage.setItem('goalmates_group_' + firebase.auth().currentUser.uid, JSON.stringify(config));
+  if(window.firebase && firebase.auth) {
+    firebase.auth().signOut().then(() => location.reload()).catch(() => location.reload());
   } else {
-    localStorage.setItem('goalmates_group_config', JSON.stringify(config));
-  }
-  location.reload();
-}
-
-function resetGroup() {
-  if(confirm('¿Resetear configuración del grupo? Se perderán todos los datos locales.')) {
-    localStorage.clear();
     location.reload();
   }
 }
 
-/* ===== SERVICE WORKER REGISTRATION ===== */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
-  });
+function initApp() {
+  try {
+    if(!window.firebase) { bootOffline(); return; }
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    if(!firebase.auth) { bootOffline(); return; }
+    firebase.auth().onAuthStateChanged(user => {
+      if(user) {
+        CURRENT_USER = user;
+        DB_PATH = 'torneosApp/users/' + user.uid + '/data';
+        const key = 'goalmates_group_' + user.uid;
+        GROUP_CONFIG = JSON.parse(localStorage.getItem(key) || 'null');
+        if(GROUP_CONFIG && GROUP_CONFIG.players && GROUP_CONFIG.players.length) {
+          GROUP_CONFIG.players.forEach(p => PLAYERS.push(p));
+          ui.selected = [...PLAYERS];
+          ui.hA = PLAYERS[0]||''; ui.hB = PLAYERS[1]||'';
+          ui.tA = (PLAYERS[0]&&PLAYERS[1]) ? PLAYERS[0]+' + '+PLAYERS[1] : '';
+          ui.tB = (PLAYERS[2]&&PLAYERS[3]) ? PLAYERS[2]+' + '+PLAYERS[3] : '';
+          const titleEl = document.getElementById('app-title');
+          if(titleEl) titleEl.textContent = GROUP_CONFIG.groupName || 'GoalMates';
+          gmHide();
+          initFirebase();
+          render();
+        } else {
+          showSetupScreen();
+        }
+      } else {
+        showAuthScreen('');
+      }
+    });
+  } catch(err) {
+    console.warn('Firebase Auth error:', err);
+    bootOffline();
+  }
+}
+
+function bootOffline() {
+  GROUP_CONFIG = JSON.parse(localStorage.getItem('goalmates_group_config') || 'null');
+  if(GROUP_CONFIG && GROUP_CONFIG.players && GROUP_CONFIG.players.length) {
+    GROUP_CONFIG.players.forEach(p => PLAYERS.push(p));
+    ui.selected = [...PLAYERS];
+    ui.hA = PLAYERS[0]||''; ui.hB = PLAYERS[1]||'';
+    gmHide();
+    initFirebase();
+    render();
+  } else {
+    showSetupScreen();
+  }
 }
 
 </script>
