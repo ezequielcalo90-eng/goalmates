@@ -1308,6 +1308,26 @@ function renderCara(){
   $('cara').innerHTML=`<div class="field"><div class="fl-brand-word">Historial</div><h2 style="margin:4px 0 6px;font-size:32px">Cara a cara</h2><p class="whiteMuted">Historial directo entre jugadores y equipos.</p></div><div class="grid3"><div class="stat"><span class="muted">Jugadores</span><b>${PLAYERS.length}</b></div><div class="stat"><span class="muted">Partidos</span><b>${state.matches.filter(m=>m.played&&!m.bye).length}</b></div><div class="stat"><span class="muted">Torneos</span><b>${state.tournaments.length}</b></div></div><div class="card"><b>Plantel</b><p class="subtle">Integrantes actuales del grupo.</p><div class="divider"></div><div class="players">${PLAYERS.map(p=>`<div class="player">${playerPhoto(p,'photoMini')}${esc(p)}</div>`).join('')}</div></div><div class="card"><div class="matchTop"><b>⚔️ Rivalidades</b><span class="tag">H2H</span></div><p class="subtle">Compará el historial directo entre jugadores o equipos.</p><div class="divider"></div><div class="grid2"><button class="choice ${ui.hType==='players'?'active':''}" onclick="ui.hType='players';render()">Jugadores</button><button class="choice ${ui.hType==='teams'?'active':''}" onclick="ui.hType='teams';render()">Equipos 2vs2</button></div>${filt}<div class="divider"></div>${content}</div>`
 }
 
+function matchPrediction(a,b){
+  var ms=directMatchUnits('1v1').filter(function(m){return [...m.teamA,...m.teamB].includes(a)&&[...m.teamA,...m.teamB].includes(b);});
+  var wa=0,wb=0,d=0;
+  ms.forEach(function(m){var w=winnerOf(m);if(!w)d++;else if(w.includes(a))wa++;else wb++;});
+  function recentForm(name){
+    var rec=orderedPlayedMatches().filter(function(m){return [...(m.teamA||[]),...(m.teamB||[])].includes(name);}).slice(-5);
+    var w=0;rec.forEach(function(m){var win=winnerOf(m);if(win&&win.includes(name))w++;});
+    return rec.length?w/rec.length:0.5;
+  }
+  var fa=recentForm(a),fb=recentForm(b);
+  var total=wa+wb+d||1;
+  var h2hA=wa/total,h2hB=wb/total;
+  var probA=Math.round((h2hA*0.6+fa*0.4)*100);
+  var probB=Math.round((h2hB*0.6+fb*0.4)*100);
+  var probD=100-probA-probB;
+  if(probD<0){var excess=-probD;probA-=Math.ceil(excess/2);probB-=Math.floor(excess/2);probD=0;}
+  if(ms.length===0){probA=Math.round(fa/(fa+fb)*100)||50;probB=100-probA;probD=0;}
+  return {probA:probA,probB:probB,probD:probD,sampleA:wa,sampleB:wb,sampleD:d,total:ms.length};
+}
+
 function caraPlayers(){let scope=ui.hFormat==='Todos'?'General':ui.hFormat;let ms=directMatchUnits('1v1').filter(m=>matchInScope(m,scope)).filter(m=>[...m.teamA,...m.teamB].includes(ui.hA)&&[...m.teamA,...m.teamB].includes(ui.hB));let a=0,b=0,e=0;ms.forEach(m=>{let w=winnerOf(m);if(!w)e++;else{let wp=w[0];if(wp===ui.hA)a++;if(wp===ui.hB)b++;}});let pred=matchPrediction(ui.hA,ui.hB);
   let faceScoreHtml=`<div style="text-align:center"><div class="faceScore">${a} — ${b}</div><div style="font-size:10px;color:#6B7280;margin-top:4px">${e} empate${e===1?'':'s'}</div></div>`;
 
