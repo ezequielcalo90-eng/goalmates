@@ -403,16 +403,7 @@
 <body>
 
 
-<div id="gm-overlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#052e1a 0%,#16a34a 100%);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,system-ui,sans-serif;">
-  <div id="gm-box" style="background:white;border-radius:28px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,0.35);">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:52px;margin-bottom:8px;">⚽</div>
-      <h1 style="margin:0 0 4px;color:#052e1a;font-size:26px;font-weight:900;">GoalMates</h1>
-      <p id="gm-subtitle" style="color:#64748b;margin:0;font-size:13px;">Cargando...</p>
-    </div>
-    <div id="gm-content"></div>
-  </div>
-</div>
+<div id="gm-overlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#052e1a 0%,#16a34a 100%);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,system-ui,sans-serif;"><div id="gm-box" style="background:white;border-radius:28px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,0.35);"><div style="text-align:center;margin-bottom:24px;"><div style="font-size:52px;margin-bottom:8px;">⚽</div><h1 style="margin:0 0 4px;color:#052e1a;font-size:26px;font-weight:900;">GoalMates</h1><p id="gm-subtitle" style="color:#64748b;margin:0;font-size:13px;">Cargando...</p></div><div id="gm-content"></div></div></div>
 <div class="app">
 <div class="glow g1"></div><div class="glow g2"></div>
 <header>
@@ -455,8 +446,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script>
 
-let GROUP_CONFIG = {groupName:"Comidita Pai", players:["Uri","Caló","Chaza","Robert","Fede","Alva"]};
-let CURRENT_USER = null;
 let GROUP_CONFIG = null;
 let CURRENT_USER = null;
 let PLAYERS = [];
@@ -2066,125 +2055,36 @@ function closeModal(){$("modal").classList.remove('active')}$("modal").addEventL
 function go(tab){ui.tab=tab;render()}document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 
 /* ══════════ GoalMates Auth & Setup ══════════ */
-function gmShow(html, subtitle) {
-  document.getElementById('gm-subtitle').textContent = subtitle || '';
-  document.getElementById('gm-content').innerHTML = html;
-  document.getElementById('gm-overlay').style.display = 'flex';
-}
-function gmHide() {
-  document.getElementById('gm-overlay').style.display = 'none';
-}
+function gmShow(html,subtitle){document.getElementById('gm-subtitle').textContent=subtitle||'';document.getElementById('gm-content').innerHTML=html;document.getElementById('gm-overlay').style.display='flex';}
+function gmHide(){document.getElementById('gm-overlay').style.display='none';}
 
-function showAuthScreen(errMsg) {
+function showAuthScreen(errMsg){
   gmShow('<div id="auth-tabs" style="display:flex;background:#f0fdf4;border-radius:16px;padding:4px;margin-bottom:20px;"><button id="tab-login" onclick="switchTab(\'login\')" style="flex:1;padding:10px;border:none;border-radius:12px;background:white;color:#052e1a;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Ingresar</button><button id="tab-reg" onclick="switchTab(\'register\')" style="flex:1;padding:10px;border:none;border-radius:12px;background:transparent;color:#64748b;font-weight:700;font-size:14px;cursor:pointer;">Registrarse</button></div>'+(errMsg?'<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 14px;margin-bottom:14px;color:#dc2626;font-size:13px;font-weight:600;">'+errMsg+'</div>':'')+'<div style="display:flex;flex-direction:column;gap:10px;"><input id="auth-email" type="email" placeholder="Tu email" autocomplete="email" style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;"><input id="auth-pass" type="password" placeholder="Contrasena" autocomplete="current-password" style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;"><div id="pass2-wrap" style="display:none;"><input id="auth-pass2" type="password" placeholder="Repetir contrasena" style="border:2px solid #d1fae5;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;width:100%;box-sizing:border-box;"></div><button id="auth-btn" onclick="doAuth()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;margin-top:4px;">Ingresar</button></div><div style="text-align:center;margin-top:14px;"><button onclick="doForgot()" style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;text-decoration:underline;">Olvidaste tu contrasena?</button></div>','Tu cuenta personal de torneos');
   setTimeout(function(){var ep=document.getElementById('auth-pass');if(ep)ep.addEventListener('keydown',function(e){if(e.key==='Enter')doAuth();});},50);
 }
 
 var _authMode='login';
-function switchTab(mode){
-  _authMode=mode;var isReg=mode==='register';
-  var tl=document.getElementById('tab-login'),tr=document.getElementById('tab-reg'),pw=document.getElementById('pass2-wrap'),btn=document.getElementById('auth-btn');
-  if(tl){tl.style.background=isReg?'transparent':'white';tl.style.color=isReg?'#64748b':'#052e1a';tl.style.boxShadow=isReg?'none':'0 2px 8px rgba(0,0,0,0.1)';}
-  if(tr){tr.style.background=isReg?'white':'transparent';tr.style.color=isReg?'#052e1a':'#64748b';tr.style.boxShadow=isReg?'0 2px 8px rgba(0,0,0,0.1)':'none';}
-  if(pw)pw.style.display=isReg?'block':'none';
-  if(btn)btn.textContent=isReg?'Crear cuenta':'Ingresar';
-}
+function switchTab(mode){_authMode=mode;var isReg=mode==='register';var tl=document.getElementById('tab-login'),tr=document.getElementById('tab-reg'),pw=document.getElementById('pass2-wrap'),btn=document.getElementById('auth-btn');if(tl){tl.style.background=isReg?'transparent':'white';tl.style.color=isReg?'#64748b':'#052e1a';tl.style.boxShadow=isReg?'none':'0 2px 8px rgba(0,0,0,0.1)';}if(tr){tr.style.background=isReg?'white':'transparent';tr.style.color=isReg?'#052e1a':'#64748b';tr.style.boxShadow=isReg?'0 2px 8px rgba(0,0,0,0.1)':'none';}if(pw)pw.style.display=isReg?'block':'none';if(btn)btn.textContent=isReg?'Crear cuenta':'Ingresar';}
 
-function doAuth(){
-  var email=((document.getElementById('auth-email')||{}).value||'').trim();
-  var pass=(document.getElementById('auth-pass')||{}).value||'';
-  if(!email||!pass){showAuthScreen('Completa email y contrasena.');return;}
-  var btn=document.getElementById('auth-btn');if(btn){btn.textContent='...';btn.disabled=true;}
-  if(_authMode==='register'){
-    var pass2=(document.getElementById('auth-pass2')||{}).value||'';
-    if(pass!==pass2){showAuthScreen('Las contrasenias no coinciden.');return;}
-    if(pass.length<6){showAuthScreen('Minimo 6 caracteres.');return;}
-    firebase.auth().createUserWithEmailAndPassword(email,pass).catch(function(err){showAuthScreen(authErr(err));});
-  }else{
-    firebase.auth().signInWithEmailAndPassword(email,pass).catch(function(err){showAuthScreen(authErr(err));});
-  }
-}
+function doAuth(){var email=((document.getElementById('auth-email')||{}).value||'').trim();var pass=(document.getElementById('auth-pass')||{}).value||'';if(!email||!pass){showAuthScreen('Completa email y contrasena.');return;}var btn=document.getElementById('auth-btn');if(btn){btn.textContent='...';btn.disabled=true;}if(_authMode==='register'){var pass2=(document.getElementById('auth-pass2')||{}).value||'';if(pass!==pass2){showAuthScreen('Las contrasenias no coinciden.');return;}if(pass.length<6){showAuthScreen('Minimo 6 caracteres.');return;}firebase.auth().createUserWithEmailAndPassword(email,pass).catch(function(err){showAuthScreen(authErr(err));});}else{firebase.auth().signInWithEmailAndPassword(email,pass).catch(function(err){showAuthScreen(authErr(err));});}}
 
-function doForgot(){
-  var email=((document.getElementById('auth-email')||{}).value||'').trim();
-  if(!email){showAuthScreen('Ingresa tu email primero.');return;}
-  firebase.auth().sendPasswordResetEmail(email).then(function(){showAuthScreen('Email de recuperacion enviado.');}).catch(function(err){showAuthScreen(authErr(err));});
-}
+function doForgot(){var email=((document.getElementById('auth-email')||{}).value||'').trim();if(!email){showAuthScreen('Ingresa tu email primero.');return;}firebase.auth().sendPasswordResetEmail(email).then(function(){showAuthScreen('Email de recuperacion enviado.');}).catch(function(err){showAuthScreen(authErr(err));});}
 
-function authErr(err){
-  var map={'auth/user-not-found':'No existe una cuenta con ese email.','auth/wrong-password':'Contrasena incorrecta.','auth/invalid-email':'Email invalido.','auth/email-already-in-use':'Ya existe una cuenta con ese email.','auth/weak-password':'Minimo 6 caracteres.','auth/too-many-requests':'Demasiados intentos.','auth/invalid-credential':'Email o contrasena incorrectos.'};
-  return map[err.code]||('Error: '+err.message);
-}
+function authErr(err){var map={'auth/user-not-found':'No existe una cuenta con ese email.','auth/wrong-password':'Contrasena incorrecta.','auth/invalid-email':'Email invalido.','auth/email-already-in-use':'Ya existe una cuenta con ese email.','auth/weak-password':'Minimo 6 caracteres.','auth/too-many-requests':'Demasiados intentos.','auth/invalid-credential':'Email o contrasena incorrectos.'};return map[err.code]||('Error: '+err.message);}
 
-function showSetupScreen(){
-  gmShow('<div style="display:flex;flex-direction:column;gap:12px;"><div><label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Nombre del grupo</label><input id="setup-name" type="text" placeholder="Ej: Los Cracks del Martes" maxlength="40" style="width:100%;border:2px solid #d1fae5;border-radius:14px;padding:12px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;box-sizing:border-box;outline:none;"></div><div><label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Jugadores <span style="color:#64748b;font-weight:400;">(min 2, max 12)</span></label><div id="setup-players" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div><button onclick="addPlayer()" style="width:100%;border:2px dashed #d1fae5;border-radius:12px;padding:9px;background:none;color:#16a34a;font-weight:700;font-size:14px;cursor:pointer;">+ Agregar jugador</button></div><button onclick="createGroup()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;">Crear grupo</button></div>','Configura tu grupo');
-  for(var i=0;i<4;i++)addPlayer();
-}
+function showSetupScreen(){gmShow('<div style="display:flex;flex-direction:column;gap:12px;"><div><label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Nombre del grupo</label><input id="setup-name" type="text" placeholder="Ej: Los Cracks del Martes" maxlength="40" style="width:100%;border:2px solid #d1fae5;border-radius:14px;padding:12px;font-size:15px;font-weight:600;color:#0f172a;background:#f0fdf4;box-sizing:border-box;outline:none;"></div><div><label style="font-weight:700;color:#0f172a;font-size:14px;display:block;margin-bottom:6px;">Jugadores <span style="color:#64748b;font-weight:400;">(min 2, max 12)</span></label><div id="setup-players" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div><button onclick="addPlayer()" style="width:100%;border:2px dashed #d1fae5;border-radius:12px;padding:9px;background:none;color:#16a34a;font-weight:700;font-size:14px;cursor:pointer;">+ Agregar jugador</button></div><button onclick="createGroup()" style="background:linear-gradient(135deg,#16a34a,#052e1a);color:white;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:900;cursor:pointer;">Crear grupo</button></div>','Configura tu grupo');for(var i=0;i<4;i++)addPlayer();}
 
-function addPlayer(){
-  var list=document.getElementById('setup-players');if(!list)return;
-  var count=list.querySelectorAll('input').length;if(count>=12)return;
-  var d=document.createElement('div');d.style.cssText='display:flex;gap:6px;align-items:center;';
-  d.innerHTML='<input type="text" placeholder="Jugador '+(count+1)+'" maxlength="20" style="flex:1;border:2px solid #d1fae5;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;"><button onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:10px;padding:7px 10px;color:#dc2626;cursor:pointer;font-size:14px;">x</button>';
-  list.appendChild(d);
-}
+function addPlayer(){var list=document.getElementById('setup-players');if(!list)return;var count=list.querySelectorAll('input').length;if(count>=12)return;var d=document.createElement('div');d.style.cssText='display:flex;gap:6px;align-items:center;';d.innerHTML='<input type="text" placeholder="Jugador '+(count+1)+'" maxlength="20" style="flex:1;border:2px solid #d1fae5;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:600;color:#0f172a;background:#f0fdf4;outline:none;"><button onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:10px;padding:7px 10px;color:#dc2626;cursor:pointer;font-size:14px;">x</button>';list.appendChild(d);}
 
-function createGroup(){
-  var groupName=((document.getElementById('setup-name')||{}).value||'').trim()||'Mi Grupo';
-  var players=Array.from(document.querySelectorAll('#setup-players input')).map(function(i){return i.value.trim();}).filter(Boolean);
-  if(players.length<2){alert('Agrega al menos 2 jugadores.');return;}
-  var groupId='g_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
-  var config={groupId:groupId,groupName:groupName,players:players,createdAt:new Date().toISOString()};
-  var key=CURRENT_USER?'goalmates_group_'+CURRENT_USER.uid:'goalmates_group_config';
-  localStorage.setItem(key,JSON.stringify(config));
-  location.reload();
-}
+function createGroup(){var groupName=((document.getElementById('setup-name')||{}).value||'').trim()||'Mi Grupo';var players=Array.from(document.querySelectorAll('#setup-players input')).map(function(i){return i.value.trim();}).filter(Boolean);if(players.length<2){alert('Agrega al menos 2 jugadores.');return;}var groupId='g_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);var config={groupId:groupId,groupName:groupName,players:players,createdAt:new Date().toISOString()};var key=CURRENT_USER?'goalmates_group_'+CURRENT_USER.uid:'goalmates_group_config';localStorage.setItem(key,JSON.stringify(config));location.reload();}
 
-function doSignOut(){
-  if(!confirm('Cerrar sesion?'))return;
-  if(window.firebase&&firebase.auth){firebase.auth().signOut().then(function(){location.reload();}).catch(function(){location.reload();});}
-  else{location.reload();}
-}
+function doSignOut(){if(!confirm('Cerrar sesion?'))return;if(window.firebase&&firebase.auth){firebase.auth().signOut().then(function(){location.reload();}).catch(function(){location.reload();});}else{location.reload();}}
 
-function bootUser(user){
-  CURRENT_USER=user;
-  if(user)DB_PATH='torneosApp/users/'+user.uid+'/data';
-  var key=user?'goalmates_group_'+user.uid:'goalmates_group_config';
-  GROUP_CONFIG=JSON.parse(localStorage.getItem(key)||'null');
-  if(GROUP_CONFIG&&GROUP_CONFIG.players&&GROUP_CONFIG.players.length){
-    GROUP_CONFIG.players.forEach(function(p){PLAYERS.push(p);});
-    ui.selected=[].concat(PLAYERS);
-    ui.hA=PLAYERS[0]||'';ui.hB=PLAYERS[1]||'';
-    ui.tA=(PLAYERS[0]&&PLAYERS[1])?PLAYERS[0]+' + '+PLAYERS[1]:'';
-    ui.tB=(PLAYERS[2]&&PLAYERS[3])?PLAYERS[2]+' + '+PLAYERS[3]:'';
-    var titleEl=document.getElementById('app-title');
-    if(titleEl)titleEl.textContent=GROUP_CONFIG.groupName||'GoalMates';
-    gmHide();
-    initFirebase();
-    render();
-  }else{
-    showSetupScreen();
-  }
-}
+function bootUser(user){CURRENT_USER=user;if(user)DB_PATH='torneosApp/users/'+user.uid+'/data';var key=user?'goalmates_group_'+user.uid:'goalmates_group_config';GROUP_CONFIG=JSON.parse(localStorage.getItem(key)||'null');if(GROUP_CONFIG&&GROUP_CONFIG.players&&GROUP_CONFIG.players.length){GROUP_CONFIG.players.forEach(function(p){PLAYERS.push(p);});ui.selected=[].concat(PLAYERS);ui.hA=PLAYERS[0]||'';ui.hB=PLAYERS[1]||'';ui.tA=(PLAYERS[0]&&PLAYERS[1])?PLAYERS[0]+' + '+PLAYERS[1]:'';ui.tB=(PLAYERS[2]&&PLAYERS[3])?PLAYERS[2]+' + '+PLAYERS[3]:'';var titleEl=document.getElementById('app-title');if(titleEl)titleEl.textContent=GROUP_CONFIG.groupName||'GoalMates';gmHide();initFirebase();render();}else{showSetupScreen();}}
 
-function initApp(){
-  try{
-    if(!window.firebase){bootUser(null);return;}
-    if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-    if(!firebase.auth){bootUser(null);return;}
-    firebase.auth().onAuthStateChanged(function(user){
-      if(user){bootUser(user);}
-      else{showAuthScreen('');}
-    });
-  }catch(err){
-    console.warn('Firebase Auth error:',err);
-    bootUser(null);
-  }
-}
+function initApp(){try{if(!window.firebase){bootUser(null);return;}if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);if(!firebase.auth){bootUser(null);return;}firebase.auth().onAuthStateChanged(function(user){if(user){bootUser(user);}else{showAuthScreen('');}});}catch(err){console.warn('Firebase Auth error:',err);bootUser(null);}}
 
-if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
-}
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 
 initApp();
 </script>
