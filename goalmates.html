@@ -2191,12 +2191,12 @@ function showGroupMenu() {
   var groupListHTML = allGroups.length > 0 ? allGroups.map(function(g){
     var isCurrent = g.key === currentKey;
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;margin-bottom:6px;cursor:pointer;background:'+(isCurrent?'rgba(212,175,55,0.15)':'rgba(255,255,255,0.05)')+';border:1px solid '+(isCurrent?'rgba(212,175,55,0.4)':'rgba(255,255,255,0.1)')+'">'
-      + '<div onclick="switchToGroup(''+g.key+'')" style="flex:1;">'
+      + '<div data-grpkey="' + g.key + '" class="gm-group-item" style="flex:1;cursor:pointer;padding:2px 0">' 
       + '<div style="font-weight:800;color:#F4F1E7;font-size:14px;">'+g.config.groupName+'</div>'
       + '<div style="font-size:11px;color:#9ca3af;">'+g.config.players.length+' jugadores</div>'
       + '</div>'
       + (isCurrent ? '<span style="color:#D4AF37;font-size:16px;margin-right:8px;">✓</span>' : '')
-      + (allGroups.length > 1 ? '<button onclick="deleteGroup(''+g.key+'')" style="background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:4px 8px;color:#fca5a5;font-size:11px;cursor:pointer;font-weight:700;">✕</button>' : '')
+      + (allGroups.length > 1 ? '<button data-delkey="' + g.key + '" class="gm-del-btn" style="background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:4px 8px;color:#fca5a5;font-size:11px;cursor:pointer;font-weight:700;">✕</button>' : '')
       + '</div>';
   }).join('') : '<div style="color:#9ca3af;font-size:13px;text-align:center;padding:10px;">No hay grupos guardados</div>';
 
@@ -2230,6 +2230,13 @@ function showGroupMenu() {
       box2.style.position='relative';
       box2.appendChild(closeBtn);
     }
+    // Delegate click events for group items and delete buttons
+    document.querySelectorAll('.gm-group-item').forEach(function(el){
+      el.onclick = function(){ switchToGroup(this.getAttribute('data-grpkey')); };
+    });
+    document.querySelectorAll('.gm-del-btn').forEach(function(el){
+      el.onclick = function(e){ e.stopPropagation(); deleteGroup(this.getAttribute('data-delkey')); };
+    });
   }, 50);
 }
 
