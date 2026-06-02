@@ -88,7 +88,7 @@ const firebaseConfig = {
 };
 let db=null;
 let syncingFromCloud=false;
-const DB_PATH="torneosApp/state";
+let DB_PATH ="torneosApp/state";
 let pendingDeletedTournamentIds=new Set();
 
 function seed(){return{tournaments:[],matches:[],deletedTournamentIds:[]}}
